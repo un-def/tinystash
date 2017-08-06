@@ -1,0 +1,7 @@
+*_temp/
+logs/
+resty_modules/
+
+*.sh
+conf/nginx.conf
+config.lua
