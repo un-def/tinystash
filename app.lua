@@ -40,14 +40,15 @@ M.webhook = function()
   end
 
   if file_obj and file_obj.file_id then
-    local to_encrypt_bytes = utils.decode_urlsafe_base64(file_obj.file_id)
-    local encrypted_bytes = cipher:encrypt(to_encrypt_bytes)
-    local encrypted = base58:encode(encrypted_bytes)
     utils.log('mime_type: %s', file_obj.mime_type)
     utils.log('file_id: %s', file_obj.file_id)
-    utils.log('file_id len: %s', #to_encrypt_bytes)
-    utils.log('encrypted len: %s', #encrypted_bytes)
-    response_text = config.link_url_prefix .. encrypted
+    local file_id_bytes = utils.decode_urlsafe_base64(file_obj.file_id)
+    utils.log('file_id length: %d   bytes size: %d', #file_obj.file_id, #file_id_bytes)
+    local tiny_id_src = string.char(#file_id_bytes) .. file_id_bytes
+    local tiny_id_bytes = cipher:encrypt(tiny_id_src)
+    local tiny_id = base58:encode(tiny_id_bytes)
+    utils.log('tiny_id length: %d   bytes size: %d', #tiny_id, #tiny_id_bytes)
+    response_text = config.link_url_prefix .. tiny_id
   else
     response_text = 'Send me picture, audio, video, or file.'
   end
@@ -62,6 +63,7 @@ M.webhook = function()
 end
 
 M.encrypt = function()
+  -- TODO: obsolete version; move webhook tiny_id generation code to helper and reuse there
   local to_encrypt_bytes = utils.decode_urlsafe_base64(ngx.var.to_encrypt)
   if not to_encrypt_bytes then
     ngx.exit(ngx.HTTP_NOT_FOUND)
@@ -72,12 +74,14 @@ M.encrypt = function()
 end
 
 M.decrypt = function()
-  local to_decrypt_bytes = base58:decode(ngx.var.to_decrypt)
-  local decrypted_bytes = cipher:decrypt(to_decrypt_bytes)
-  local decrypted = utils.encode_urlsafe_base64(decrypted_bytes)
+  local tiny_id_bytes = base58:decode(ngx.var.tiny_id)
+  local tiny_id_src = cipher:decrypt(tiny_id_bytes)
+  local file_id_len = string.byte(tiny_id_src:sub(1, 1))
+  local file_id_bytes = tiny_id_src:sub(2, file_id_len+1)
+  local file_id = utils.encode_urlsafe_base64(file_id_bytes)
   local httpc = http.new()
   httpc:set_timeout(30000)
-  local uri = 'https://api.telegram.org/bot' .. config.token .. '/getFile?file_id=' .. decrypted
+  local uri = 'https://api.telegram.org/bot' .. config.token .. '/getFile?file_id=' .. file_id
   local res, err = httpc:request_uri(uri)
   if res then
     utils.log(res.body)
