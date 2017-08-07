@@ -7,13 +7,16 @@ local utils = require('utils')
 local config = require('config')
 
 
-local M = {}
+local M = {
+  SUPPORTED_TG_TYPES = {'audio', 'voice', 'video', 'video_note',
+                        'photo', 'sticker', 'document'},
+}
 
 M.main = function()
   ngx.say('tiny[stash]')
 end
 
-M.webhook = function()
+M.webhook = function(self)
   ngx.req.read_body()
   local req_body = ngx.req.get_body_data()
   utils.log(req_body)
@@ -25,18 +28,14 @@ M.webhook = function()
   end
 
   local file_obj, response_text
-  if message.audio then
-    file_obj = message.audio
-  elseif message.video then
-    file_obj = message.video
-  elseif message.voice then
-    file_obj = message.voice
-  elseif message.sticker then
-    file_obj = message.sticker
-  elseif message.photo then
-    file_obj = message.photo[#message.photo]
-  elseif message.document then
-    file_obj = message.document
+  for _, type_name in ipairs(self.SUPPORTED_TG_TYPES) do
+    file_obj = message[type_name]
+    if file_obj then
+      if type_name == 'photo' then
+        file_obj = file_obj[#file_obj]
+      end
+      break
+    end
   end
 
   if file_obj and file_obj.file_id then
