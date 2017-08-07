@@ -95,7 +95,10 @@ M.decrypt = function()
       httpc:connect('api.telegram.org', 443)
       local proxy_res, proxy_err = httpc:request({path = path})
       if proxy_res then
-        proxy_res.headers['Content-Disposition'] = 'inline'
+        local file_name = file_path:match('/([^/]*)$') or file_path
+        local content_disposition = (
+          'attachment; filename="%s"'):format(file_name)
+        proxy_res.headers['Content-Disposition'] = content_disposition
         httpc:proxy_response(proxy_res)
         httpc:set_keepalive()
       else
