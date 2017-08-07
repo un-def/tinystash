@@ -43,7 +43,8 @@ M.webhook = function()
     utils.log('mime_type: %s', file_obj.mime_type)
     utils.log('file_id: %s', file_obj.file_id)
     local file_id_bytes = utils.decode_urlsafe_base64(file_obj.file_id)
-    utils.log('file_id length: %d   bytes size: %d', #file_obj.file_id, #file_id_bytes)
+    utils.log('file_id length: %d   bytes size: %d',
+              #file_obj.file_id, #file_id_bytes)
     local tiny_id_src = string.char(#file_id_bytes) .. file_id_bytes
     local tiny_id_bytes = cipher:encrypt(tiny_id_src)
     local tiny_id = base58:encode(tiny_id_bytes)
@@ -63,14 +64,15 @@ M.webhook = function()
 end
 
 M.encrypt = function()
-  -- TODO: obsolete version; move webhook tiny_id generation code to helper and reuse there
+  -- TODO: obsolete version
+  -- move webhook tiny_id generation code to helper and reuse there
   local to_encrypt_bytes = utils.decode_urlsafe_base64(ngx.var.to_encrypt)
   if not to_encrypt_bytes then
     ngx.exit(ngx.HTTP_NOT_FOUND)
   end
   local encrypted_bytes = cipher:encrypt(to_encrypt_bytes)
   local encrypted = base58:encode(encrypted_bytes)
-  ngx.say(('%s://%s/decrypt/%s'):format(ngx.var.scheme, ngx.var.host, encrypted))
+  ngx.say(encrypted)
 end
 
 M.decrypt = function()
@@ -81,7 +83,8 @@ M.decrypt = function()
   local file_id = utils.encode_urlsafe_base64(file_id_bytes)
   local httpc = http.new()
   httpc:set_timeout(30000)
-  local uri = 'https://api.telegram.org/bot' .. config.token .. '/getFile?file_id=' .. file_id
+  local uri = 'https://api.telegram.org/bot' .. config.token ..
+              '/getFile?file_id=' .. file_id
   local res, err = httpc:request_uri(uri)
   if res then
     utils.log(res.body)
