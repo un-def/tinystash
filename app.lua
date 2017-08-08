@@ -10,6 +10,7 @@ local config = require('config')
 local M = {
   SUPPORTED_TG_TYPES = {'audio', 'voice', 'video', 'video_note',
                         'photo', 'sticker', 'document'},
+  CHUNK_SIZE = 8192,
 }
 
 M.main = function()
@@ -74,44 +75,59 @@ M.encrypt = function()
   ngx.say(encrypted)
 end
 
-M.decrypt = function()
+M.decrypt = function(self)
   local tiny_id_bytes = base58:decode(ngx.var.tiny_id)
   local tiny_id_src = cipher:decrypt(tiny_id_bytes)
   local file_id_len = string.byte(tiny_id_src:sub(1, 1))
   local file_id_bytes = tiny_id_src:sub(2, file_id_len+1)
   local file_id = utils.encode_urlsafe_base64(file_id_bytes)
+
   local httpc = http.new()
   httpc:set_timeout(30000)
+  local res, err
+
   local uri = 'https://api.telegram.org/bot' .. config.token ..
               '/getFile?file_id=' .. file_id
-  local res, err = httpc:request_uri(uri)
-  if res then
-    utils.log(res.body)
-    local res_json = json.decode(res.body)
-    if not res_json.ok then
-      ngx.say(res_json.description)
-      ngx.exit(ngx.HTTP_BAD_REQUEST)
-    else
-      local file_path = res_json.result.file_path
-      local path = '/file/bot' .. config.token .. '/' .. file_path
-      httpc:connect('api.telegram.org', 443)
-      local proxy_res, proxy_err = httpc:request({path = path})
-      if proxy_res then
-        local file_name = file_path:match('/([^/]*)$') or file_path
-        local content_disposition = (
-          'attachment; filename="%s"'):format(file_name)
-        proxy_res.headers['Content-Disposition'] = content_disposition
-        httpc:proxy_response(proxy_res)
-        httpc:set_keepalive()
-      else
-        ngx.say(proxy_err)
-        ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
-      end
-    end
-  else
+  res, err = httpc:request_uri(uri)
+  if not res then
     ngx.say(err)
     ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
   end
+
+  utils.log(res.body)
+  local res_json = json.decode(res.body)
+  if not res_json.ok then
+    ngx.say(res_json.description)
+    ngx.exit(ngx.HTTP_BAD_REQUEST)
+  end
+
+  local file_path = res_json.result.file_path
+  local path = '/file/bot' .. config.token .. '/' .. file_path
+  httpc:connect('api.telegram.org', 443)
+  res, err = httpc:request({path = path})
+  if not res then
+    ngx.say(err)
+    ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
+  end
+
+  local file_name = file_path:match('/([^/]*)$') or file_path
+  local content_disposition = (
+    'attachment; filename="%s"'):format(file_name)
+  ngx.header['Content-Disposition'] = content_disposition
+  ngx.header['Content-Type'] = 'application/octet-stream'
+  ngx.header['Content-Length'] = res.headers['Content-Length']
+
+  local chunk
+  while true do
+    chunk, err = res.body_reader(self.CHUNK_SIZE)
+    if err then
+      utils.log(ngx.ERR, err)
+      break
+    end
+    if not chunk then break end
+    ngx.print(chunk)
+  end
+
 end
 
 return M
