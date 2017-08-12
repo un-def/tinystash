@@ -5,7 +5,7 @@ M.log = function(...)
   local args_offset
   if type(level) ~= 'number' then
     message = level
-    level = ngx.NOTICE
+    level = ngx.DEBUG
     args_offset = 2
   else
     args_offset = 3
