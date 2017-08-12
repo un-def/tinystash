@@ -16,14 +16,20 @@ end
 
 M.encode_urlsafe_base64 = function(to_encode)
   local encoded = ngx.encode_base64(to_encode, true)
-  if encoded == nil then return end
+  if not encoded then
+    return nil, 'base64 encode error'
+  end
   encoded = encoded:gsub('[%+/]', {['+'] = '-', ['/'] = '_' })
   return encoded
 end
 
 M.decode_urlsafe_base64 = function(to_decode)
   to_decode = to_decode:gsub('[-_]', {['-'] = '+', ['_'] = '/' })
-  return ngx.decode_base64(to_decode)
+  local decoded = ngx.decode_base64(to_decode)
+  if not decoded then
+    return nil, 'base64 decode error'
+  end
+  return decoded
 end
 
 return M

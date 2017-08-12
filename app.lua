@@ -1,8 +1,6 @@
 local http = require('resty.http')
 local json = require('cjson.safe')
-local base58 = require('basex').base58bitcoin
 
-local cipher = require('cipher')
 local tinyid = require('tinyid')
 local utils = require('utils')
 local config = require('config')
@@ -14,9 +12,11 @@ local M = {
   CHUNK_SIZE = 8192,
 }
 
+
 M.main = function()
   ngx.say('tiny[stash]')
 end
+
 
 M.webhook = function(self)
   ngx.req.read_body()
@@ -43,13 +43,7 @@ M.webhook = function(self)
   if file_obj and file_obj.file_id then
     utils.log('mime_type: %s', file_obj.mime_type)
     utils.log('file_id: %s', file_obj.file_id)
-    local file_id_bytes = utils.decode_urlsafe_base64(file_obj.file_id)
-    utils.log('file_id length: %d   bytes size: %d',
-              #file_obj.file_id, #file_id_bytes)
-    local tiny_id_src = string.char(#file_id_bytes) .. file_id_bytes
-    local tiny_id_bytes = cipher:encrypt(tiny_id_src)
-    local tiny_id = base58:encode(tiny_id_bytes)
-    utils.log('tiny_id length: %d   bytes size: %d', #tiny_id, #tiny_id_bytes)
+    local tiny_id = tinyid.encode({file_id = file_obj.file_id})
     response_text = config.link_url_prefix .. tiny_id
   else
     response_text = 'Send me picture, audio, video, or file.'
@@ -64,17 +58,6 @@ M.webhook = function(self)
   ngx.print(json.encode(params))
 end
 
-M.encrypt = function()
-  -- TODO: obsolete version
-  -- move webhook tiny_id generation code to helper and reuse there
-  local to_encrypt_bytes = utils.decode_urlsafe_base64(ngx.var.to_encrypt)
-  if not to_encrypt_bytes then
-    ngx.exit(ngx.HTTP_NOT_FOUND)
-  end
-  local encrypted_bytes = cipher:encrypt(to_encrypt_bytes)
-  local encrypted = base58:encode(encrypted_bytes)
-  ngx.say(encrypted)
-end
 
 M.decrypt = function(self)
   local tiny_id_data, tiny_id_err = tinyid.decode(ngx.var.tiny_id)
@@ -130,5 +113,6 @@ M.decrypt = function(self)
   end
 
 end
+
 
 return M

@@ -6,6 +6,16 @@ local utils = require('utils')
 
 local M = {}
 
+M.encode = function(tiny_id_data)
+  local file_id_bytes, err = utils.decode_urlsafe_base64(tiny_id_data.file_id)
+  if not file_id_bytes then
+    return nil, err
+  end
+  local tiny_id_src = string.char(#file_id_bytes) .. file_id_bytes
+  local tiny_id_bytes = cipher:encrypt(tiny_id_src)
+  return base58:encode(tiny_id_bytes)
+end
+
 M.decode = function(tiny_id)
   local tiny_id_bytes, err = base58:decode(tiny_id)
   if not tiny_id_bytes then
