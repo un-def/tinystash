@@ -3,6 +3,7 @@ local json = require('cjson.safe')
 local base58 = require('basex').base58bitcoin
 
 local cipher = require('cipher')
+local tinyid = require('tinyid')
 local utils = require('utils')
 local config = require('config')
 
@@ -76,18 +77,18 @@ M.encrypt = function()
 end
 
 M.decrypt = function(self)
-  local tiny_id_bytes = base58:decode(ngx.var.tiny_id)
-  local tiny_id_src = cipher:decrypt(tiny_id_bytes)
-  local file_id_len = string.byte(tiny_id_src:sub(1, 1))
-  local file_id_bytes = tiny_id_src:sub(2, file_id_len+1)
-  local file_id = utils.encode_urlsafe_base64(file_id_bytes)
+  local tiny_id_data, tiny_id_err = tinyid.decode(ngx.var.tiny_id)
+  if not tiny_id_data then
+    utils.log('tiny_id decode error: %s', tiny_id_err)
+    ngx.exit(ngx.HTTP_NOT_FOUND)
+  end
 
   local httpc = http.new()
   httpc:set_timeout(30000)
   local res, err
 
   local uri = 'https://api.telegram.org/bot' .. config.token ..
-              '/getFile?file_id=' .. file_id
+              '/getFile?file_id=' .. tiny_id_data.file_id
   res, err = httpc:request_uri(uri)
   if not res then
     ngx.say(err)
