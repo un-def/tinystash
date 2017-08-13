@@ -9,6 +9,8 @@ local config = require('config')
 local M = {
   SUPPORTED_TG_TYPES = {'audio', 'voice', 'video', 'video_note',
                         'photo', 'sticker', 'document'},
+  MAX_FILE_SIZE = 20971520,
+  MAX_FILE_SIZE_AS_TEXT = '20 MiB',
   CHUNK_SIZE = 8192,
 }
 
@@ -43,8 +45,14 @@ M.webhook = function(self)
   if file_obj and file_obj.file_id then
     utils.log('mime_type: %s', file_obj.mime_type)
     utils.log('file_id: %s', file_obj.file_id)
-    local tiny_id = tinyid.encode({file_id = file_obj.file_id})
-    response_text = config.link_url_prefix .. tiny_id
+    utils.log('file_size: %s', file_obj.file_size)
+    if file_obj.file_size and file_obj.file_size > self.MAX_FILE_SIZE then
+      response_text = ('The file is too big. Maximum file size is %s.'):format(
+        self.MAX_FILE_SIZE_AS_TEXT)
+    else
+      local tiny_id = tinyid.encode({file_id = file_obj.file_id})
+      response_text = config.link_url_prefix .. tiny_id
+    end
   else
     response_text = 'Send me picture, audio, video, or file.'
   end
