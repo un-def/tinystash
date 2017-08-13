@@ -7,8 +7,15 @@ local config = require('config')
 
 
 local M = {
-  SUPPORTED_TG_TYPES = {'audio', 'voice', 'video', 'video_note',
-                        'photo', 'sticker', 'document'},
+  TG_TYPES = {
+    AUDIO = 'audio',
+    VOICE = 'voice',
+    VIDEO = 'video',
+    VIDEO_NOTE = 'video_note',
+    PHOTO = 'photo',
+    STICKER = 'sticker',
+    DOCUMENT = 'document'
+  },
   MAX_FILE_SIZE = 20971520,
   MAX_FILE_SIZE_AS_TEXT = '20 MiB',
   CHUNK_SIZE = 8192,
@@ -32,10 +39,10 @@ M.webhook = function(self)
   end
 
   local file_obj, response_text
-  for _, type_name in ipairs(self.SUPPORTED_TG_TYPES) do
+  for _, type_name in pairs(self.TG_TYPES) do
     file_obj = message[type_name]
     if file_obj then
-      if type_name == 'photo' then
+      if type_name == self.TG_TYPES.PHOTO then
         file_obj = file_obj[#file_obj]
       end
       break
