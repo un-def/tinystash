@@ -6,20 +6,37 @@ local utils = require('utils')
 local config = require('config')
 
 
-local M = {
-  TG_TYPES = {
-    AUDIO = 'audio',
-    VOICE = 'voice',
-    VIDEO = 'video',
-    VIDEO_NOTE = 'video_note',
-    PHOTO = 'photo',
-    STICKER = 'sticker',
-    DOCUMENT = 'document'
-  },
-  MAX_FILE_SIZE = 20971520,
-  MAX_FILE_SIZE_AS_TEXT = '20 MiB',
-  CHUNK_SIZE = 8192,
+local TG_TYPES = {
+  AUDIO = 'audio',
+  VOICE = 'voice',
+  VIDEO = 'video',
+  VIDEO_NOTE = 'video_note',
+  PHOTO = 'photo',
+  STICKER = 'sticker',
+  DOCUMENT = 'document',
 }
+
+local TG_TYPES_EXT = {
+  [TG_TYPES.VOICE] = 'oga',
+  [TG_TYPES.VIDEO] = 'mp4',
+  [TG_TYPES.VIDEO_NOTE] = 'mp4',
+  [TG_TYPES.PHOTO] = 'jpg',
+  [TG_TYPES.STICKER] = 'webp',
+}
+
+local GET_FILE_MODES = {
+  DOWNLOAD = 'dl',
+  INLINE = 'il',
+}
+
+local MAX_FILE_SIZE = 20971520
+local MAX_FILE_SIZE_AS_TEXT = '20 MiB'
+
+local CHUNK_SIZE = 8192
+
+
+
+local M = {}
 
 
 M.main = function()
@@ -27,7 +44,7 @@ M.main = function()
 end
 
 
-M.webhook = function(self)
+M.webhook = function()
   ngx.req.read_body()
   local req_body = ngx.req.get_body_data()
   utils.log(req_body)
@@ -38,11 +55,12 @@ M.webhook = function(self)
     ngx.exit(ngx.HTTP_OK)
   end
 
-  local file_obj, response_text
-  for _, type_name in pairs(self.TG_TYPES) do
-    file_obj = message[type_name]
+  local file_obj, file_obj_type, response_text
+  for _, _file_obj_type in pairs(TG_TYPES) do
+    file_obj = message[_file_obj_type]
     if file_obj then
-      if type_name == self.TG_TYPES.PHOTO then
+      file_obj_type = _file_obj_type
+      if file_obj_type == TG_TYPES.PHOTO then
         file_obj = file_obj[#file_obj]
       end
       break
@@ -53,12 +71,29 @@ M.webhook = function(self)
     utils.log('mime_type: %s', file_obj.mime_type)
     utils.log('file_id: %s', file_obj.file_id)
     utils.log('file_size: %s', file_obj.file_size)
-    if file_obj.file_size and file_obj.file_size > self.MAX_FILE_SIZE then
+    if file_obj.file_size and file_obj.file_size > MAX_FILE_SIZE then
       response_text = ('The file is too big. Maximum file size is %s.'):format(
-        self.MAX_FILE_SIZE_AS_TEXT)
+        MAX_FILE_SIZE_AS_TEXT)
     else
       local tiny_id = tinyid.encode({file_id = file_obj.file_id})
-      response_text = config.link_url_prefix .. tiny_id
+      local link_template = ('%s/%%s/%s'):format(config.link_url_prefix,
+                                                 tiny_id)
+      local file_ext = TG_TYPES_EXT[file_obj_type]
+      if file_obj.file_name then
+        file_ext = utils.get_filename_ext(file_obj.file_name)
+      end
+      if file_ext then
+        link_template = link_template .. '.' .. file_ext
+      end
+      local download_link = link_template:format(GET_FILE_MODES.DOWNLOAD)
+      local inline_link = link_template:format(GET_FILE_MODES.INLINE)
+      response_text = ([[
+Inline link (view in browser):
+%s
+
+Download link:
+%s
+]]):format(inline_link, download_link)
     end
   else
     response_text = 'Send me picture, audio, video, or file.'
@@ -74,8 +109,9 @@ M.webhook = function(self)
 end
 
 
-M.decrypt = function(self)
-  local tiny_id_data, tiny_id_err = tinyid.decode(ngx.var.tiny_id)
+M.get_file = function(_, tiny_id, mode, extension)
+  if extension == '' then extension = nil end
+  local tiny_id_data, tiny_id_err = tinyid.decode(tiny_id)
   if not tiny_id_data then
     utils.log('tiny_id decode error: %s', tiny_id_err)
     ngx.exit(ngx.HTTP_NOT_FOUND)
@@ -109,16 +145,22 @@ M.decrypt = function(self)
     ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
   end
 
-  local file_name = file_path:match('/([^/]*)$') or file_path
-  local content_disposition = (
-    'attachment; filename="%s"'):format(file_name)
+  if not extension then
+    ngx.header['Content-Type'] = 'application/octet-stream'
+  end
+  local content_disposition
+  if mode == GET_FILE_MODES.DOWNLOAD then
+    local file_name = utils.get_basename(file_path)
+    content_disposition = ('attachment; filename="%s"'):format(file_name)
+  elseif mode == GET_FILE_MODES.INLINE then
+    content_disposition = 'inline'
+  end
   ngx.header['Content-Disposition'] = content_disposition
-  ngx.header['Content-Type'] = 'application/octet-stream'
   ngx.header['Content-Length'] = res.headers['Content-Length']
 
   local chunk
   while true do
-    chunk, err = res.body_reader(self.CHUNK_SIZE)
+    chunk, err = res.body_reader(CHUNK_SIZE)
     if err then
       utils.log(ngx.ERR, err)
       break

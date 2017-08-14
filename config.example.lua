@@ -10,6 +10,6 @@ return {
   },
 
   token = 'bot_token',
-  link_url_prefix = 'https://example.com/get/',
+  link_url_prefix = 'https://example.com',
 
 }
