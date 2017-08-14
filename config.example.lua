@@ -9,7 +9,9 @@ return {
     hash_rounds = 5,
   },
 
-  token = 'bot_token',
+  tg_token = 'bot_token',
+  tg_webhook_secret = nil,
+
   link_url_prefix = 'https://example.com',
 
 }

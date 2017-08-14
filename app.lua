@@ -44,7 +44,10 @@ M.main = function()
 end
 
 
-M.webhook = function()
+M.webhook = function(secret)
+  if secret ~= (config.tg_webhook_secret or config.tg_token) then
+    ngx.exit(ngx.HTTP_NOT_FOUND)
+  end
   ngx.req.read_body()
   local req_body = ngx.req.get_body_data()
   utils.log(req_body)
@@ -109,7 +112,7 @@ Download link:
 end
 
 
-M.get_file = function(_, tiny_id, mode, extension)
+M.get_file = function(tiny_id, mode, extension)
   if extension == '' then extension = nil end
   local tiny_id_data, tiny_id_err = tinyid.decode(tiny_id)
   if not tiny_id_data then
@@ -121,7 +124,7 @@ M.get_file = function(_, tiny_id, mode, extension)
   httpc:set_timeout(30000)
   local res, err
 
-  local uri = 'https://api.telegram.org/bot' .. config.token ..
+  local uri = 'https://api.telegram.org/bot' .. config.tg_token ..
               '/getFile?file_id=' .. tiny_id_data.file_id
   res, err = httpc:request_uri(uri)
   if not res then
@@ -137,7 +140,7 @@ M.get_file = function(_, tiny_id, mode, extension)
   end
 
   local file_path = res_json.result.file_path
-  local path = '/file/bot' .. config.token .. '/' .. file_path
+  local path = '/file/bot' .. config.tg_token .. '/' .. file_path
   httpc:connect('api.telegram.org', 443)
   res, err = httpc:request({path = path})
   if not res then
