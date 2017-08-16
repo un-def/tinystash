@@ -38,8 +38,7 @@ end
 
 M.get_filename_ext = function(path, with_dot)
   local ext = path:match('[^/]%.([%a%d]+)$')
-  if not ext then return nil end
-  if with_dot then return '.' .. ext end
+  if ext and with_dot then return '.' .. ext end
   return ext
 end
 

@@ -16,12 +16,20 @@ local TG_TYPES = {
   DOCUMENT = 'document',
 }
 
-local TG_TYPES_EXT = {
+local TG_TYPES_EXTENSIONS_MAP = {
   [TG_TYPES.VOICE] = 'oga',
   [TG_TYPES.VIDEO] = 'mp4',
   [TG_TYPES.VIDEO_NOTE] = 'mp4',
   [TG_TYPES.PHOTO] = 'jpg',
   [TG_TYPES.STICKER] = 'webp',
+}
+
+local TG_TYPES_MEDIA_TYPES_MAP = {
+  [TG_TYPES.VOICE] = 'audio/ogg',
+  [TG_TYPES.VIDEO] = 'video/mp4',
+  [TG_TYPES.VIDEO_NOTE] = 'video/mp4',
+  [TG_TYPES.PHOTO] = 'image/jpeg',
+  [TG_TYPES.STICKER] = 'image/webp',
 }
 
 local GET_FILE_MODES = {
@@ -35,15 +43,21 @@ local MAX_FILE_SIZE_AS_TEXT = '20 MiB'
 local CHUNK_SIZE = 8192
 
 
+local M = {}
 local views = {}
+M.views = views
+M.__index = M
+setmetatable(views, M)
 
+
+---- views ----
 
 views.main = function()
   ngx.say('tiny[stash]')
 end
 
 
-views.webhook = function(_, secret)
+views.webhook = function(self, secret)
   if secret ~= (config.tg_webhook_secret or config.tg_token) then
     ngx.exit(ngx.HTTP_NOT_FOUND)
   end
@@ -70,23 +84,19 @@ views.webhook = function(_, secret)
   end
 
   if file_obj and file_obj.file_id then
-    utils.log('mime_type: %s', file_obj.mime_type)
-    utils.log('file_id: %s', file_obj.file_id)
-    utils.log('file_size: %s', file_obj.file_size)
+    local media_type = self:guess_media_type(file_obj, file_obj_type)
+    utils.log('file_obj_type: %s  |  media_type: %s',
+              file_obj_type, media_type)
+    utils.log('file_id: %s  |  file_size: %s',
+              file_obj.file_id, file_obj.file_size)
     if file_obj.file_size and file_obj.file_size > MAX_FILE_SIZE then
       response_text = ('The file is too big. Maximum file size is %s.'):format(
         MAX_FILE_SIZE_AS_TEXT)
     else
       local tiny_id = tinyid.encode({file_id = file_obj.file_id})
-      local link_template = ('%s/%%s/%s'):format(config.link_url_prefix,
-                                                 tiny_id)
-      local file_ext = TG_TYPES_EXT[file_obj_type]
-      if file_obj.file_name then
-        file_ext = utils.get_filename_ext(file_obj.file_name)
-      end
-      if file_ext then
-        link_template = link_template .. '.' .. file_ext
-      end
+      local ext = self:guess_extension(file_obj, file_obj_type, true)
+      local link_template = ('%s/%%s/%s%s'):format(
+        config.link_url_prefix, tiny_id, ext or '')
       local download_link = link_template:format(GET_FILE_MODES.DOWNLOAD)
       local inline_link = link_template:format(GET_FILE_MODES.INLINE)
       response_text = ([[
@@ -174,11 +184,24 @@ views.get_file = function(_, tiny_id, mode, extension)
 end
 
 
-local M = {
-  views = views,
-}
-M.__index = M
+---- app-specific helpers ----
 
-setmetatable(views, M)
+M.guess_media_type = function(_, file_obj, file_obj_type)
+  return file_obj.mime_type or TG_TYPES_MEDIA_TYPES_MAP[file_obj_type]
+end
+
+
+M.guess_extension = function(_, file_obj, file_obj_type, with_dot)
+  local ext
+  if file_obj.file_name then
+    ext = utils.get_filename_ext(file_obj.file_name)
+  end
+  if not ext then
+    ext = TG_TYPES_EXTENSIONS_MAP[file_obj_type]
+  end
+  if ext and with_dot then return '.' .. ext end
+  return ext
+end
+
 
 return M
