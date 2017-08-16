@@ -32,6 +32,11 @@ M.decode_urlsafe_base64 = function(to_decode)
   return decoded
 end
 
+M.escape_uri = function(uri, escape_slashes)
+  if escape_slashes then return ngx.escape_uri(uri) end
+  return uri:gsub('[^/]+', ngx.escape_uri)
+end
+
 M.get_basename = function(path)
   return path:match('/([^/]*)$') or path
 end

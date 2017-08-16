@@ -149,9 +149,9 @@ views.get_file = function(_, tiny_id, mode, extension)
   end
 
   local file_path = res_json.result.file_path
-  local path = '/file/bot' .. config.tg_token .. '/' .. file_path
+  local path = ('/file/bot%s/%s'):format(config.tg_token, file_path)
   httpc:connect('api.telegram.org', 443)
-  res, err = httpc:request({path = path})
+  res, err = httpc:request({path = utils.escape_uri(path)})
   if not res then
     ngx.say(err)
     ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
