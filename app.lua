@@ -35,16 +35,15 @@ local MAX_FILE_SIZE_AS_TEXT = '20 MiB'
 local CHUNK_SIZE = 8192
 
 
+local views = {}
 
-local M = {}
 
-
-M.main = function()
+views.main = function()
   ngx.say('tiny[stash]')
 end
 
 
-M.webhook = function(secret)
+views.webhook = function(_, secret)
   if secret ~= (config.tg_webhook_secret or config.tg_token) then
     ngx.exit(ngx.HTTP_NOT_FOUND)
   end
@@ -112,7 +111,7 @@ Download link:
 end
 
 
-M.get_file = function(tiny_id, mode, extension)
+views.get_file = function(_, tiny_id, mode, extension)
   if extension == '' then extension = nil end
   local tiny_id_data, tiny_id_err = tinyid.decode(tiny_id)
   if not tiny_id_data then
@@ -174,5 +173,12 @@ M.get_file = function(tiny_id, mode, extension)
 
 end
 
+
+local M = {
+  views = views,
+}
+M.__index = M
+
+setmetatable(views, M)
 
 return M
