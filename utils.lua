@@ -47,4 +47,17 @@ M.get_filename_ext = function(path, with_dot)
   return ext
 end
 
+M.get_substring = function(str, start, length, blank_to_nil)
+  local stop, next
+  if not length then
+    stop = #str
+  else
+    stop = start + length - 1
+    if stop < #str then next = stop + 1 end
+  end
+  local substr = str:sub(start, stop)
+  if blank_to_nil and #substr == 0 then substr = nil end
+  return substr, next
+end
+
 return M

@@ -3,40 +3,65 @@ local base58 = require('basex').base58bitcoin
 local cipher = require('cipher')
 local utils = require('utils')
 
+local decode_urlsafe_base64 = utils.decode_urlsafe_base64
+local encode_urlsafe_base64 = utils.encode_urlsafe_base64
+local get_substring = utils.get_substring
+
 
 local M = {}
 
-M.encode = function(tiny_id_data)
-  local file_id_bytes, err = utils.decode_urlsafe_base64(tiny_id_data.file_id)
+M.encode = function(params)
+  local file_id_bytes, err = decode_urlsafe_base64(params.file_id)
   if not file_id_bytes then
     return nil, err
   end
-  local tiny_id_src = string.char(#file_id_bytes) .. file_id_bytes
-  local tiny_id_bytes = cipher:encrypt(tiny_id_src)
-  return base58:encode(tiny_id_bytes)
+  local file_id_size_byte = string.char(#file_id_bytes)
+  local media_type_byte = string.char(0)
+  local tiny_id_raw_bytes = table.concat{
+    file_id_size_byte,
+    file_id_bytes,
+    media_type_byte,
+  }
+  local tiny_id_encr_bytes = cipher:encrypt(tiny_id_raw_bytes)
+  return base58:encode(tiny_id_encr_bytes)
 end
 
 M.decode = function(tiny_id)
-  local tiny_id_bytes, err = base58:decode(tiny_id)
-  if not tiny_id_bytes then
+  -- decrypt tiny_id
+  local tiny_id_encr_bytes, err = base58:decode(tiny_id)
+  if not tiny_id_encr_bytes then
     return nil, err
   end
-  local tiny_id_src = cipher:decrypt(tiny_id_bytes)
-  if not tiny_id_src then
+  local tiny_id_raw_bytes = cipher:decrypt(tiny_id_encr_bytes)
+  if not tiny_id_raw_bytes then
     return nil, 'AES decrypt error'
   end
-  local file_id_size = string.byte(tiny_id_src:sub(1, 1))
+  -- get file_id size
+  local file_id_size = string.byte(tiny_id_raw_bytes:sub(1, 1))
   if not file_id_size or file_id_size < 1 then
     return nil, 'Wrong file_id size'
   end
-  local file_id_bytes = tiny_id_src:sub(2, file_id_size+1)
+  -- get file_id
+  local file_id_bytes, pos
+  file_id_bytes, pos = get_substring(tiny_id_raw_bytes, 2, file_id_size)
   if #file_id_bytes < file_id_size then
     return nil, 'file_id size less than declared'
   end
-  local tiny_id_data = {
-    file_id = utils.encode_urlsafe_base64(file_id_bytes)
+  local file_id = encode_urlsafe_base64(file_id_bytes)
+  -- get media_type
+  local media_type = nil
+  if pos then
+    local media_type_byte = get_substring(tiny_id_raw_bytes, pos, 1)
+    local media_type_id = string.byte(media_type_byte)
+    if media_type_id ~= 0 then
+      media_type = 'text/plain'
+    end
+  end
+
+  return {
+    file_id = file_id,
+    media_type = media_type,
   }
-  return tiny_id_data
 end
 
 return M

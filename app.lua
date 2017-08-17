@@ -123,8 +123,8 @@ end
 
 views.get_file = function(_, tiny_id, mode, extension)
   if extension == '' then extension = nil end
-  local tiny_id_data, tiny_id_err = tinyid.decode(tiny_id)
-  if not tiny_id_data then
+  local tiny_id_params, tiny_id_err = tinyid.decode(tiny_id)
+  if not tiny_id_params then
     utils.log('tiny_id decode error: %s', tiny_id_err)
     ngx.exit(ngx.HTTP_NOT_FOUND)
   end
@@ -134,7 +134,7 @@ views.get_file = function(_, tiny_id, mode, extension)
   local res, err
 
   local uri = 'https://api.telegram.org/bot' .. config.tg_token ..
-              '/getFile?file_id=' .. tiny_id_data.file_id
+              '/getFile?file_id=' .. tiny_id_params.file_id
   res, err = httpc:request_uri(uri)
   if not res then
     ngx.say(err)
