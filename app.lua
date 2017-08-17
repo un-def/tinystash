@@ -5,6 +5,9 @@ local tinyid = require('tinyid')
 local utils = require('utils')
 local config = require('config')
 
+local print = ngx.print
+local log = utils.log
+
 
 local TG_TYPES = {
   AUDIO = 'audio',
@@ -53,22 +56,22 @@ setmetatable(views, M)
 ---- views ----
 
 views.main = function()
-  ngx.say('tiny[stash]')
+  print('tiny[stash]')
 end
 
 
 views.webhook = function(self, secret)
   if secret ~= (config.tg_webhook_secret or config.tg_token) then
-    ngx.exit(ngx.HTTP_NOT_FOUND)
+    self:exit(ngx.HTTP_NOT_FOUND)
   end
   ngx.req.read_body()
   local req_body = ngx.req.get_body_data()
-  utils.log(req_body)
+  log(req_body)
 
   local req_json = json.decode(req_body)
   local message = req_json and req_json.message
   if not message then
-    ngx.exit(ngx.HTTP_OK)
+    self:exit(ngx.HTTP_OK)
   end
 
   local file_obj, file_obj_type, response_text
@@ -85,10 +88,8 @@ views.webhook = function(self, secret)
 
   if file_obj and file_obj.file_id then
     local media_type = self:guess_media_type(file_obj, file_obj_type)
-    utils.log('file_obj_type: %s  |  media_type: %s',
-              file_obj_type, media_type)
-    utils.log('file_id: %s  |  file_size: %s',
-              file_obj.file_id, file_obj.file_size)
+    log('file_obj_type: %s  |  media_type: %s', file_obj_type, media_type)
+    log('file_id: %s  |  file_size: %s', file_obj.file_id, file_obj.file_size)
     if file_obj.file_size and file_obj.file_size > MAX_FILE_SIZE then
       response_text = ('The file is too big. Maximum file size is %s.'):format(
         MAX_FILE_SIZE_AS_TEXT)
@@ -117,16 +118,16 @@ Download link:
     text = response_text,
   }
   ngx.header['Content-Type'] = 'application/json'
-  ngx.print(json.encode(params))
+  print(json.encode(params))
 end
 
 
-views.get_file = function(_, tiny_id, mode, extension)
+views.get_file = function(self, tiny_id, mode, extension)
   if extension == '' then extension = nil end
   local tiny_id_params, tiny_id_err = tinyid.decode(tiny_id)
   if not tiny_id_params then
-    utils.log('tiny_id decode error: %s', tiny_id_err)
-    ngx.exit(ngx.HTTP_NOT_FOUND)
+    log('tiny_id decode error: %s', tiny_id_err)
+    self:exit(ngx.HTTP_NOT_FOUND)
   end
 
   local httpc = http.new()
@@ -137,15 +138,15 @@ views.get_file = function(_, tiny_id, mode, extension)
               '/getFile?file_id=' .. tiny_id_params.file_id
   res, err = httpc:request_uri(uri)
   if not res then
-    ngx.say(err)
-    ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
+    log(err)
+    self:exit(ngx.HTTP_INTERNAL_SERVER_ERROR, err)
   end
 
-  utils.log(res.body)
+  log(res.body)
   local res_json = json.decode(res.body)
   if not res_json.ok then
-    ngx.say(res_json.description)
-    ngx.exit(ngx.HTTP_BAD_REQUEST)
+    log(res_json.description)
+    self:exit(ngx.HTTP_NOT_FOUND, res_json.description)
   end
 
   local file_path = res_json.result.file_path
@@ -153,8 +154,8 @@ views.get_file = function(_, tiny_id, mode, extension)
   httpc:connect('api.telegram.org', 443)
   res, err = httpc:request({path = utils.escape_uri(path)})
   if not res then
-    ngx.say(err)
-    ngx.exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
+    log(err)
+    self:exit(ngx.HTTP_INTERNAL_SERVER_ERROR, err)
   end
 
   if not extension then
@@ -174,17 +175,26 @@ views.get_file = function(_, tiny_id, mode, extension)
   while true do
     chunk, err = res.body_reader(CHUNK_SIZE)
     if err then
-      utils.log(ngx.ERR, err)
+      log(ngx.ERR, err)
       break
     end
     if not chunk then break end
-    ngx.print(chunk)
+    print(chunk)
   end
 
 end
 
 
 ---- app-specific helpers ----
+
+M.exit = function(_, status, content)
+  if not content then ngx.exit(status) end
+  ngx.status = status
+  ngx.header['Content-Type'] = 'text/plain'
+  print(content)
+  ngx.exit(ngx.HTTP_OK)
+end
+
 
 M.guess_media_type = function(_, file_obj, file_obj_type)
   return file_obj.mime_type or TG_TYPES_MEDIA_TYPES_MAP[file_obj_type]
