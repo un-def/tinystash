@@ -9,6 +9,8 @@ local print = ngx.print
 local log = utils.log
 
 
+local TG_API_HOST = 'api.telegram.org'
+
 local TG_TYPES = {
   AUDIO = 'audio',
   VOICE = 'voice',
@@ -133,9 +135,8 @@ views.get_file = function(self, tiny_id, mode, extension)
   local httpc = http.new()
   httpc:set_timeout(30000)
   local res, err
-
-  local uri = 'https://api.telegram.org/bot' .. config.tg_token ..
-              '/getFile?file_id=' .. tiny_id_params.file_id
+  local uri = ('https://%s/bot%s/getFile?file_id=%s'):format(
+    TG_API_HOST, config.tg_token, tiny_id_params.file_id)
   res, err = httpc:request_uri(uri)
   if not res then
     log(err)
@@ -151,7 +152,8 @@ views.get_file = function(self, tiny_id, mode, extension)
 
   local file_path = res_json.result.file_path
   local path = ('/file/bot%s/%s'):format(config.tg_token, file_path)
-  httpc:connect('api.telegram.org', 443)
+  httpc:connect(TG_API_HOST, 443)
+  httpc:ssl_handshake(nil, TG_API_HOST, true)
   res, err = httpc:request({path = utils.escape_uri(path)})
   if not res then
     log(err)
@@ -186,6 +188,8 @@ views.get_file = function(self, tiny_id, mode, extension)
     if not chunk then break end
     print(chunk)
   end
+
+  httpc:set_keepalive()
 
 end
 
