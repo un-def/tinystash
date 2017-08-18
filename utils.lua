@@ -41,10 +41,13 @@ M.get_basename = function(path)
   return path:match('/([^/]*)$') or path
 end
 
-M.get_filename_ext = function(path, with_dot)
-  local ext = path:match('[^/]%.([%a%d]+)$')
-  if ext and with_dot then return '.' .. ext end
-  return ext
+M.split_ext = function(path, exclude_dot)
+  local root, ext = path:match('(.*[^/]+)%.([^./]+)$')
+  root = root or path
+  if ext and not exclude_dot then
+    ext = '.' .. ext
+  end
+  return root, ext
 end
 
 M.get_substring = function(str, start, length, blank_to_nil)

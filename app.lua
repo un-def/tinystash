@@ -20,7 +20,7 @@ local TG_TYPES = {
 }
 
 local TG_TYPES_EXTENSIONS_MAP = {
-  [TG_TYPES.VOICE] = 'oga',
+  [TG_TYPES.VOICE] = 'ogg',   -- it should be .opus, but nobody respects RFCs
   [TG_TYPES.VIDEO] = 'mp4',
   [TG_TYPES.VIDEO_NOTE] = 'mp4',
   [TG_TYPES.PHOTO] = 'jpg',
@@ -95,9 +95,9 @@ views.webhook = function(self, secret)
         MAX_FILE_SIZE_AS_TEXT)
     else
       local tiny_id = tinyid.encode({file_id = file_obj.file_id})
-      local ext = self:guess_extension(file_obj, file_obj_type, true)
+      local extension = self:guess_extension(file_obj, file_obj_type)
       local link_template = ('%s/%%s/%s%s'):format(
-        config.link_url_prefix, tiny_id, ext or '')
+        config.link_url_prefix, tiny_id, extension or '')
       local download_link = link_template:format(GET_FILE_MODES.DOWNLOAD)
       local inline_link = link_template:format(GET_FILE_MODES.INLINE)
       response_text = ([[
@@ -164,6 +164,11 @@ views.get_file = function(self, tiny_id, mode, extension)
   local content_disposition
   if mode == GET_FILE_MODES.DOWNLOAD then
     local file_name = utils.get_basename(file_path)
+    -- fix voice message file .oga extension
+    if file_path:match('^voice/.+%.oga$') then
+      file_name = ('%s.%s'):format(
+        utils.split_ext(file_name), TG_TYPES_EXTENSIONS_MAP[TG_TYPES.VOICE])
+    end
     content_disposition = ('attachment; filename="%s"'):format(file_name)
   elseif mode == GET_FILE_MODES.INLINE then
     content_disposition = 'inline'
@@ -201,15 +206,15 @@ M.guess_media_type = function(_, file_obj, file_obj_type)
 end
 
 
-M.guess_extension = function(_, file_obj, file_obj_type, with_dot)
+M.guess_extension = function(_, file_obj, file_obj_type, exclude_dot)
   local ext
   if file_obj.file_name then
-    ext = utils.get_filename_ext(file_obj.file_name)
+    _, ext = utils.split_ext(file_obj.file_name, true)
   end
   if not ext then
     ext = TG_TYPES_EXTENSIONS_MAP[file_obj_type]
   end
-  if ext and with_dot then return '.' .. ext end
+  if ext and not exclude_dot then return '.' .. ext end
   return ext
 end
 
