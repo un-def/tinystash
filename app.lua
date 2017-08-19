@@ -2,6 +2,7 @@ local http = require('resty.http')
 local json = require('cjson.safe')
 
 local tinyid = require('tinyid')
+local mediatypes = require('mediatypes')
 local utils = require('utils')
 local config = require('config')
 
@@ -97,7 +98,8 @@ views.webhook = function(self, secret)
         MAX_FILE_SIZE_AS_TEXT)
     else
       local tiny_id = tinyid.encode({file_id = file_obj.file_id})
-      local extension = self:guess_extension(file_obj, file_obj_type)
+      local extension = self:guess_extension(
+        file_obj, file_obj_type, media_type)
       local link_template = ('%s/%%s/%s%s'):format(
         config.link_url_prefix, tiny_id, extension or '')
       local download_link = link_template:format(GET_FILE_MODES.DOWNLOAD)
@@ -210,7 +212,8 @@ M.guess_media_type = function(_, file_obj, file_obj_type)
 end
 
 
-M.guess_extension = function(_, file_obj, file_obj_type, exclude_dot)
+M.guess_extension = function(_, file_obj, file_obj_type, media_type,
+                             exclude_dot)
   local ext
   if file_obj.file_name then
     _, ext = utils.split_ext(file_obj.file_name, true)
@@ -218,7 +221,12 @@ M.guess_extension = function(_, file_obj, file_obj_type, exclude_dot)
   if not ext then
     ext = TG_TYPES_EXTENSIONS_MAP[file_obj_type]
   end
-  if ext and not exclude_dot then return '.' .. ext end
+  if not ext and media_type then
+    ext = mediatypes.TYPE_EXT_MAP[media_type]
+  end
+  if ext and not exclude_dot then
+    return '.' .. ext
+  end
   return ext
 end
 
