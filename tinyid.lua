@@ -1,6 +1,7 @@
 local base58 = require('basex').base58bitcoin
 
 local cipher = require('cipher')
+local mediatypes = require('mediatypes')
 local utils = require('utils')
 
 local decode_urlsafe_base64 = utils.decode_urlsafe_base64
@@ -16,7 +17,8 @@ M.encode = function(params)
     return nil, err
   end
   local file_id_size_byte = string.char(#file_id_bytes)
-  local media_type_byte = string.char(0)
+  local media_type_id = mediatypes.TYPE_ID_MAP[params.media_type] or 0
+  local media_type_byte = string.char(media_type_id)
   local tiny_id_raw_bytes = table.concat{
     file_id_size_byte,
     file_id_bytes,
@@ -54,7 +56,7 @@ M.decode = function(tiny_id)
     local media_type_byte = get_substring(tiny_id_raw_bytes, pos, 1)
     local media_type_id = string.byte(media_type_byte)
     if media_type_id ~= 0 then
-      media_type = 'text/plain'
+      media_type = mediatypes.ID_TYPE_MAP[media_type_id]
     end
   end
 

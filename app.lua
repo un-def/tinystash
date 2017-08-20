@@ -97,7 +97,10 @@ views.webhook = function(self, secret)
       response_text = ('The file is too big. Maximum file size is %s.'):format(
         MAX_FILE_SIZE_AS_TEXT)
     else
-      local tiny_id = tinyid.encode({file_id = file_obj.file_id})
+      local tiny_id = tinyid.encode{
+        file_id = file_obj.file_id,
+        media_type = media_type,
+      }
       local extension = self:guess_extension(
         file_obj, file_obj_type, media_type)
       local link_template = ('%s/%%s/%s%s'):format(
@@ -162,9 +165,11 @@ views.get_file = function(self, tiny_id, mode, extension)
     self:exit(ngx.HTTP_INTERNAL_SERVER_ERROR, err)
   end
 
-  if not extension then
-    ngx.header['Content-Type'] = 'application/octet-stream'
+  local media_type = tiny_id_params.media_type
+  if not media_type and not extension then
+    media_type = 'application/octet-stream'
   end
+
   local content_disposition
   if mode == GET_FILE_MODES.DOWNLOAD then
     local file_name = utils.get_basename(file_path)
@@ -176,6 +181,11 @@ views.get_file = function(self, tiny_id, mode, extension)
     content_disposition = ('attachment; filename="%s"'):format(file_name)
   elseif mode == GET_FILE_MODES.INLINE then
     content_disposition = 'inline'
+  end
+
+  if media_type then
+    -- if not media_type -> fallback to nginx mime.types (detect type by uri)
+    ngx.header['Content-Type'] = media_type
   end
   ngx.header['Content-Disposition'] = content_disposition
   ngx.header['Content-Length'] = res.headers['Content-Length']
