@@ -1,8 +1,8 @@
 local base58 = require('basex').base58bitcoin
 
-local cipher = require('cipher')
-local mediatypes = require('mediatypes')
-local utils = require('utils')
+local cipher = require('app.cipher')
+local mediatypes = require('app.mediatypes')
+local utils = require('app.utils')
 
 local decode_urlsafe_base64 = utils.decode_urlsafe_base64
 local encode_urlsafe_base64 = utils.encode_urlsafe_base64

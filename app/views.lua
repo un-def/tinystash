@@ -1,9 +1,10 @@
 local http = require('resty.http')
 local json = require('cjson.safe')
 
-local tinyid = require('tinyid')
-local mediatypes = require('mediatypes')
-local utils = require('utils')
+local tinyid = require('app.tinyid')
+local mediatypes = require('app.mediatypes')
+local utils = require('app.utils')
+
 local config = require('config')
 
 local print = ngx.print
@@ -50,22 +51,53 @@ local CHUNK_SIZE = 8192
 
 
 local M = {}
-local views = {}
-M.views = views
-M.__index = M
-setmetatable(views, M)
+
+
+---- app-specific helpers ----
+
+local exit = function(status, content)
+  if not content then ngx.exit(status) end
+  ngx.status = status
+  ngx.header['Content-Type'] = 'text/plain'
+  print(content)
+  ngx.exit(ngx.HTTP_OK)
+end
+
+
+local guess_media_type = function(file_obj, file_obj_type)
+  return file_obj.mime_type or TG_TYPES_MEDIA_TYPES_MAP[file_obj_type]
+end
+
+
+local guess_extension = function(file_obj, file_obj_type, media_type,
+                                 exclude_dot)
+  local ext, _
+  if file_obj.file_name then
+    _, ext = utils.split_ext(file_obj.file_name, true)
+  end
+  if not ext then
+    ext = TG_TYPES_EXTENSIONS_MAP[file_obj_type]
+  end
+  if not ext and media_type then
+    ext = mediatypes.TYPE_EXT_MAP[media_type]
+  end
+  if ext and not exclude_dot then
+    return '.' .. ext
+  end
+  return ext
+end
 
 
 ---- views ----
 
-views.main = function()
+M.main = function()
   print('tiny[stash]')
 end
 
 
-views.webhook = function(self, secret)
+M.webhook = function(secret)
   if secret ~= (config.tg_webhook_secret or config.tg_token) then
-    self:exit(ngx.HTTP_NOT_FOUND)
+    exit(ngx.HTTP_NOT_FOUND)
   end
   ngx.req.read_body()
   local req_body = ngx.req.get_body_data()
@@ -74,7 +106,7 @@ views.webhook = function(self, secret)
   local req_json = json.decode(req_body)
   local message = req_json and req_json.message
   if not message then
-    self:exit(ngx.HTTP_OK)
+    exit(ngx.HTTP_OK)
   end
 
   local file_obj, file_obj_type, response_text
@@ -90,7 +122,7 @@ views.webhook = function(self, secret)
   end
 
   if file_obj and file_obj.file_id then
-    local media_type = self:guess_media_type(file_obj, file_obj_type)
+    local media_type = guess_media_type(file_obj, file_obj_type)
     log('file_obj_type: %s  |  media_type: %s', file_obj_type, media_type)
     log('file_id: %s  |  file_size: %s', file_obj.file_id, file_obj.file_size)
     if file_obj.file_size and file_obj.file_size > MAX_FILE_SIZE then
@@ -101,8 +133,7 @@ views.webhook = function(self, secret)
         file_id = file_obj.file_id,
         media_type = media_type,
       }
-      local extension = self:guess_extension(
-        file_obj, file_obj_type, media_type)
+      local extension = guess_extension(file_obj, file_obj_type, media_type)
       local link_template = ('%s/%%s/%s%s'):format(
         config.link_url_prefix, tiny_id, extension or '')
       local download_link = link_template:format(GET_FILE_MODES.DOWNLOAD)
@@ -129,12 +160,12 @@ Download link:
 end
 
 
-views.get_file = function(self, tiny_id, mode, extension)
+M.get_file = function(tiny_id, mode, extension)
   if extension == '' then extension = nil end
   local tiny_id_params, tiny_id_err = tinyid.decode(tiny_id)
   if not tiny_id_params then
     log('tiny_id decode error: %s', tiny_id_err)
-    self:exit(ngx.HTTP_NOT_FOUND)
+    exit(ngx.HTTP_NOT_FOUND)
   end
 
   local httpc = http.new()
@@ -145,14 +176,14 @@ views.get_file = function(self, tiny_id, mode, extension)
   res, err = httpc:request_uri(uri)
   if not res then
     log(err)
-    self:exit(ngx.HTTP_INTERNAL_SERVER_ERROR, err)
+    exit(ngx.HTTP_INTERNAL_SERVER_ERROR, err)
   end
 
   log(res.body)
   local res_json = json.decode(res.body)
   if not res_json.ok then
     log(res_json.description)
-    self:exit(ngx.HTTP_NOT_FOUND, res_json.description)
+    exit(ngx.HTTP_NOT_FOUND, res_json.description)
   end
 
   local file_path = res_json.result.file_path
@@ -162,7 +193,7 @@ views.get_file = function(self, tiny_id, mode, extension)
   res, err = httpc:request({path = utils.escape_uri(path)})
   if not res then
     log(err)
-    self:exit(ngx.HTTP_INTERNAL_SERVER_ERROR, err)
+    exit(ngx.HTTP_INTERNAL_SERVER_ERROR, err)
   end
 
   local media_type = tiny_id_params.media_type
@@ -203,41 +234,6 @@ views.get_file = function(self, tiny_id, mode, extension)
 
   httpc:set_keepalive()
 
-end
-
-
----- app-specific helpers ----
-
-M.exit = function(_, status, content)
-  if not content then ngx.exit(status) end
-  ngx.status = status
-  ngx.header['Content-Type'] = 'text/plain'
-  print(content)
-  ngx.exit(ngx.HTTP_OK)
-end
-
-
-M.guess_media_type = function(_, file_obj, file_obj_type)
-  return file_obj.mime_type or TG_TYPES_MEDIA_TYPES_MAP[file_obj_type]
-end
-
-
-M.guess_extension = function(_, file_obj, file_obj_type, media_type,
-                             exclude_dot)
-  local ext
-  if file_obj.file_name then
-    _, ext = utils.split_ext(file_obj.file_name, true)
-  end
-  if not ext then
-    ext = TG_TYPES_EXTENSIONS_MAP[file_obj_type]
-  end
-  if not ext and media_type then
-    ext = mediatypes.TYPE_EXT_MAP[media_type]
-  end
-  if ext and not exclude_dot then
-    return '.' .. ext
-  end
-  return ext
 end
 
 
