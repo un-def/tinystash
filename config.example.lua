@@ -2,7 +2,7 @@ return {
 
   aes = {
     key = 'change_me',
-    salt = 'change_me_too',
+    salt = 'changeme',   -- salt can be either nil or exactly 8 characters long
     size = 256,
     mode = 'cbc',
     hash = 'sha512',
