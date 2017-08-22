@@ -9,8 +9,11 @@ return {
     hash_rounds = 5,
   },
 
-  tg_token = 'bot_token',
-  tg_webhook_secret = nil,
+  tg = {
+    bot_username = 'tinystash_bot',
+    token = 'bot_token',
+    webhook_secret = nil,
+  },
 
   link_url_prefix = 'https://example.com',
 

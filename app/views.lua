@@ -1,4 +1,5 @@
 local http = require('resty.http')
+local template = require('resty.template')
 local json = require('cjson.safe')
 
 local tinyid = require('app.tinyid')
@@ -91,12 +92,15 @@ end
 ---- views ----
 
 M.main = function()
-  print('tiny[stash]')
+  template.render('main.html', {
+    title = 'Welcome',
+    bot_username = config.tg.bot_username,
+  })
 end
 
 
 M.webhook = function(secret)
-  if secret ~= (config.tg_webhook_secret or config.tg_token) then
+  if secret ~= (config.tg.webhook_secret or config.tg.token) then
     exit(ngx.HTTP_NOT_FOUND)
   end
   ngx.req.read_body()
@@ -172,7 +176,7 @@ M.get_file = function(tiny_id, mode, extension)
   httpc:set_timeout(30000)
   local res, err
   local uri = ('https://%s/bot%s/getFile?file_id=%s'):format(
-    TG_API_HOST, config.tg_token, tiny_id_params.file_id)
+    TG_API_HOST, config.tg.token, tiny_id_params.file_id)
   res, err = httpc:request_uri(uri)
   if not res then
     log(err)
@@ -187,7 +191,7 @@ M.get_file = function(tiny_id, mode, extension)
   end
 
   local file_path = res_json.result.file_path
-  local path = ('/file/bot%s/%s'):format(config.tg_token, file_path)
+  local path = ('/file/bot%s/%s'):format(config.tg.token, file_path)
   httpc:connect(TG_API_HOST, 443)
   httpc:ssl_handshake(nil, TG_API_HOST, true)
   res, err = httpc:request({path = utils.escape_uri(path)})
