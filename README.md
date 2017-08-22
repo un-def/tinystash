@@ -2,7 +2,7 @@
 
 ------------------------------------------------------------------------------
 
-A storage-less, database-less, \_\_\_\_\_\_\_\_-less filesharing. Send anything to tinystash [Telegram][telegram] bot. Get an opaque http link. Share it.
+A storage-less, database-less, \_\_\_\_\_\_\_\_-less filesharing. Send anything to [@tinystash_bot][tinystash_bot] [Telegram][telegram] bot. Get an opaque http link. Share it.
 
 Written in [Lua][lua]. Powered by [OpenResty][openresty].
 
@@ -40,3 +40,4 @@ $ /path/to/openresty/nginx/sbin/nginx -c conf/nginx.conf -p .
 [telegram]: http://telegram.org/
 [lua]: https://lua.org/
 [openresty]: https://openresty.org/
+[tinystash_bot]: https://t.me/tinystash_bot
