@@ -7,7 +7,15 @@ local MEDIA_TYPES = {
   [2] = {'audio/mp4', 'm4a'},
   [3] = {'audio/flac', 'flac'},
   [4] = {'audio/ogg', 'ogg'},
-  -- [5] = {},   -- next index
+  -- image types
+  [5] = {'image/jpeg', 'jpg'},
+  [6] = {'image/png', 'png'},
+  [7] = {'image/bmp', 'bmp'},
+  [8] = {'image/gif', 'gif'},
+  -- application types
+  [9] = {'application/pdf', 'pdf'},
+
+  -- [10] = {},   -- next index
 }
 
 
