@@ -137,18 +137,14 @@ M.webhook = function(secret)
         file_id = file_obj.file_id,
         media_type = media_type,
       }
+      log('tiny_id: %s', tiny_id)
       local extension = guess_extension(file_obj, file_obj_type, media_type)
       local link_template = ('%s/%%s/%s%s'):format(
         config.link_url_prefix, tiny_id, extension or '')
-      local download_link = link_template:format(GET_FILE_MODES.DOWNLOAD)
-      local inline_link = link_template:format(GET_FILE_MODES.INLINE)
-      response_text = ([[
-Inline link (view in browser):
-%s
-
-Download link:
-%s
-]]):format(inline_link, download_link)
+      response_text = template.compile('bot-response.md'){
+        link_template = link_template,
+        modes = GET_FILE_MODES,
+      }
     end
   else
     response_text = 'Send me picture, audio, video, or file.'
@@ -158,6 +154,7 @@ Download link:
     method = 'sendMessage',
     chat_id = message.from.id,
     text = response_text,
+    parse_mode = 'markdown',
   }
   ngx.header['Content-Type'] = 'application/json'
   print(json.encode(params))
