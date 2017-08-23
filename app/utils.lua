@@ -1,3 +1,10 @@
+local mediatypes = require('app.mediatypes')
+local constants = require('app.constants')
+
+local TG_TYPES_MEDIA_TYPES_MAP = constants.TG_TYPES_MEDIA_TYPES_MAP
+local TG_TYPES_EXTENSIONS_MAP = constants.TG_TYPES_EXTENSIONS_MAP
+
+
 local M = {}
 
 M.log = function(...)
@@ -12,6 +19,14 @@ M.log = function(...)
   end
   message = tostring(message)
   ngx.log(level, '\n\n*** ', message:format(select(args_offset, ...)), '\n')
+end
+
+M.exit = function(status, content)
+  if not content then ngx.exit(status) end
+  ngx.status = status
+  ngx.header['Content-Type'] = 'text/plain'
+  ngx.print(content)
+  ngx.exit(ngx.HTTP_OK)
 end
 
 M.encode_urlsafe_base64 = function(to_encode)
@@ -61,6 +76,29 @@ M.get_substring = function(str, start, length, blank_to_nil)
   local substr = str:sub(start, stop)
   if blank_to_nil and #substr == 0 then substr = nil end
   return substr, next
+end
+
+M.guess_media_type = function(file_obj, file_obj_type)
+  return file_obj.mime_type or TG_TYPES_MEDIA_TYPES_MAP[file_obj_type]
+end
+
+
+M.guess_extension = function(file_obj, file_obj_type, media_type,
+                                 exclude_dot)
+  local ext, _
+  if file_obj.file_name then
+    _, ext = M.split_ext(file_obj.file_name, true)
+  end
+  if not ext then
+    ext = TG_TYPES_EXTENSIONS_MAP[file_obj_type]
+  end
+  if not ext and media_type then
+    ext = mediatypes.TYPE_EXT_MAP[media_type]
+  end
+  if ext and not exclude_dot then
+    return '.' .. ext
+  end
+  return ext
 end
 
 return M

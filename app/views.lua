@@ -3,93 +3,27 @@ local template = require('resty.template')
 local json = require('cjson.safe')
 
 local tinyid = require('app.tinyid')
-local mediatypes = require('app.mediatypes')
 local utils = require('app.utils')
+local constants = require('app.constants')
 
 local config = require('config')
 
-local print = ngx.print
 local log = utils.log
+local exit = utils.exit
+local guess_media_type = utils.guess_media_type
+local guess_extension = utils.guess_extension
 
-
-local TG_API_HOST = 'api.telegram.org'
-
-local TG_TYPES = {
-  AUDIO = 'audio',
-  VOICE = 'voice',
-  VIDEO = 'video',
-  VIDEO_NOTE = 'video_note',
-  PHOTO = 'photo',
-  STICKER = 'sticker',
-  DOCUMENT = 'document',
-}
-
-local TG_TYPES_EXTENSIONS_MAP = {
-  [TG_TYPES.VOICE] = 'ogg',   -- it should be .opus, but nobody respects RFCs
-  [TG_TYPES.VIDEO] = 'mp4',
-  [TG_TYPES.VIDEO_NOTE] = 'mp4',
-  [TG_TYPES.PHOTO] = 'jpg',
-  [TG_TYPES.STICKER] = 'webp',
-}
-
-local TG_TYPES_MEDIA_TYPES_MAP = {
-  [TG_TYPES.VOICE] = 'audio/ogg',
-  [TG_TYPES.VIDEO] = 'video/mp4',
-  [TG_TYPES.VIDEO_NOTE] = 'video/mp4',
-  [TG_TYPES.PHOTO] = 'image/jpeg',
-  [TG_TYPES.STICKER] = 'image/webp',
-}
-
-local GET_FILE_MODES = {
-  DOWNLOAD = 'dl',
-  INLINE = 'il',
-}
-
-local MAX_FILE_SIZE = 20971520
-local MAX_FILE_SIZE_AS_TEXT = '20 MiB'
-
-local CHUNK_SIZE = 8192
+local TG_TYPES = constants.TG_TYPES
+local TG_TYPES_EXTENSIONS_MAP = constants.TG_TYPES_EXTENSIONS_MAP
+local TG_API_HOST = constants.TG_API_HOST
+local MAX_FILE_SIZE = constants.MAX_FILE_SIZE
+local MAX_FILE_SIZE_AS_TEXT = constants.MAX_FILE_SIZE_AS_TEXT
+local GET_FILE_MODES = constants.GET_FILE_MODES
+local CHUNK_SIZE = constants.CHUNK_SIZE
 
 
 local M = {}
 
-
----- app-specific helpers ----
-
-local exit = function(status, content)
-  if not content then ngx.exit(status) end
-  ngx.status = status
-  ngx.header['Content-Type'] = 'text/plain'
-  print(content)
-  ngx.exit(ngx.HTTP_OK)
-end
-
-
-local guess_media_type = function(file_obj, file_obj_type)
-  return file_obj.mime_type or TG_TYPES_MEDIA_TYPES_MAP[file_obj_type]
-end
-
-
-local guess_extension = function(file_obj, file_obj_type, media_type,
-                                 exclude_dot)
-  local ext, _
-  if file_obj.file_name then
-    _, ext = utils.split_ext(file_obj.file_name, true)
-  end
-  if not ext then
-    ext = TG_TYPES_EXTENSIONS_MAP[file_obj_type]
-  end
-  if not ext and media_type then
-    ext = mediatypes.TYPE_EXT_MAP[media_type]
-  end
-  if ext and not exclude_dot then
-    return '.' .. ext
-  end
-  return ext
-end
-
-
----- views ----
 
 M.main = function()
   template.render('main.html', {
@@ -157,7 +91,7 @@ M.webhook = function(secret)
     parse_mode = 'markdown',
   }
   ngx.header['Content-Type'] = 'application/json'
-  print(json.encode(params))
+  ngx.print(json.encode(params))
 end
 
 
@@ -230,7 +164,7 @@ M.get_file = function(tiny_id, mode, extension)
       break
     end
     if not chunk then break end
-    print(chunk)
+    ngx.print(chunk)
   end
 
   httpc:set_keepalive()
