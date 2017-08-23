@@ -1,10 +1,13 @@
+local DEFAULT_TYPE_ID = 0
+
 -- keep this array dense!
 local MEDIA_TYPES = {
   -- audio types
   [1] = {'audio/mpeg', 'mp3'},
   [2] = {'audio/mp4', 'm4a'},
   [3] = {'audio/flac', 'flac'},
-  -- [4] = {},   -- next index
+  [4] = {'audio/ogg', 'ogg'},
+  -- [5] = {},   -- next index
 }
 
 
@@ -22,6 +25,7 @@ end
 
 
 return {
+  DEFAULT_TYPE_ID = DEFAULT_TYPE_ID,
   ID_TYPE_MAP = ID_TYPE_MAP,
   TYPE_ID_MAP = TYPE_ID_MAP,
   TYPE_EXT_MAP = TYPE_EXT_MAP,

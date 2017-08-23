@@ -60,16 +60,18 @@ M.webhook = function(secret)
   end
 
   if file_obj and file_obj.file_id then
-    local media_type = guess_media_type(file_obj, file_obj_type)
-    log('file_obj_type: %s  |  media_type: %s', file_obj_type, media_type)
-    log('file_id: %s  |  file_size: %s', file_obj.file_id, file_obj.file_size)
+    local media_type, media_type_id = guess_media_type(file_obj, file_obj_type)
+    log('file_obj_type: %s', file_obj_type)
+    log('media_type: %s -> %s (%s)',
+      file_obj.mime_type, media_type, media_type_id)
+    log('file_id: %s (%s bytes)', file_obj.file_id, file_obj.file_size)
     if file_obj.file_size and file_obj.file_size > MAX_FILE_SIZE then
       response_text = ('The file is too big. Maximum file size is %s.'):format(
         MAX_FILE_SIZE_AS_TEXT)
     else
       local tiny_id = tinyid.encode{
         file_id = file_obj.file_id,
-        media_type = media_type,
+        media_type_id = media_type_id,
       }
       log('tiny_id: %s', tiny_id)
       local extension = guess_extension(file_obj, file_obj_type, media_type)

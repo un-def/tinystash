@@ -4,6 +4,8 @@ local cipher = require('app.cipher')
 local mediatypes = require('app.mediatypes')
 local utils = require('app.utils')
 
+local DEFAULT_TYPE_ID = mediatypes.DEFAULT_TYPE_ID
+local ID_TYPE_MAP = mediatypes.ID_TYPE_MAP
 local decode_urlsafe_base64 = utils.decode_urlsafe_base64
 local encode_urlsafe_base64 = utils.encode_urlsafe_base64
 local get_substring = utils.get_substring
@@ -17,8 +19,7 @@ M.encode = function(params)
     return nil, err
   end
   local file_id_size_byte = string.char(#file_id_bytes)
-  local media_type_id = mediatypes.TYPE_ID_MAP[params.media_type] or 0
-  local media_type_byte = string.char(media_type_id)
+  local media_type_byte = string.char(params.media_type_id or DEFAULT_TYPE_ID)
   local tiny_id_raw_bytes = table.concat{
     file_id_size_byte,
     file_id_bytes,
@@ -52,16 +53,18 @@ M.decode = function(tiny_id)
   local file_id = encode_urlsafe_base64(file_id_bytes)
   -- get media_type
   local media_type = nil
+  local media_type_id = nil
   if pos then
     local media_type_byte = get_substring(tiny_id_raw_bytes, pos, 1)
-    local media_type_id = string.byte(media_type_byte)
-    if media_type_id ~= 0 then
-      media_type = mediatypes.ID_TYPE_MAP[media_type_id]
+    media_type_id = string.byte(media_type_byte)
+    if media_type_id ~= DEFAULT_TYPE_ID then
+      media_type = ID_TYPE_MAP[media_type_id]
     end
   end
 
   return {
     file_id = file_id,
+    media_type_id = media_type_id,
     media_type = media_type,
   }
 end
