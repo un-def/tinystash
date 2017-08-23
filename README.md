@@ -1,17 +1,16 @@
 # ᵗⁱⁿʸ[stash]
 
-------------------------------------------------------------------------------
 
 A storage-less, database-less, \_\_\_\_\_\_\_\_-less filesharing. Send anything to [@tinystash_bot][tinystash_bot] [Telegram][telegram] bot. Get an opaque http link. Share it.
 
 Written in [Lua][lua]. Powered by [OpenResty][openresty].
 
-**The tinystash project is under (not so) heavy development and not ready for daily use.**
-
-------------------------------------------------------------------------------
-
 
 ### Installing
+
+#### OpenResty
+
+See [instructions][openresty_installation] on [OpenResty website][openresty].
 
 #### Lua packages
 
@@ -33,6 +32,7 @@ $ cp conf/nginx.example.conf conf/nginx.conf
 ### Running
 
 ```shell
+$ cd /path/to/tinystash
 $ /path/to/openresty/nginx/sbin/nginx -c conf/nginx.conf -p .
 ```
 
@@ -40,4 +40,5 @@ $ /path/to/openresty/nginx/sbin/nginx -c conf/nginx.conf -p .
 [telegram]: http://telegram.org/
 [lua]: https://lua.org/
 [openresty]: https://openresty.org/
+[openresty_installation]: https://openresty.org/en/installation.html
 [tinystash_bot]: https://t.me/tinystash_bot
