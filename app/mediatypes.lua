@@ -14,8 +14,13 @@ local MEDIA_TYPES = {
   [8] = {'image/gif', 'gif'},
   -- application types
   [9] = {'application/pdf', 'pdf'},
+  [10] = {'application/xml', 'xml'},
+  -- text types
+  [11] = {'text/plain', 'txt'},
+  [12] = {'text/html', 'html'},
+  [13] = {'text/xml', 'xml'},
 
-  -- [10] = {},   -- next index
+  -- [14] = {},   -- next index
 }
 
 

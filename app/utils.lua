@@ -82,9 +82,8 @@ M.get_substring = function(str, start, length, blank_to_nil)
 end
 
 M.parse_media_type = function(media_type)
-  -- facets (trees) are not supported
   local type_, subtype, suffix = media_type:match(
-    '^([%w_-]+)/([%w_-]+)%+?([%w_-]-)$')
+    '^([%w_-]+)/([.%w_-]+)%+?([%w_-]-)$')
   if not type_ then
     return nil, 'Media type parse error'
   end
@@ -123,14 +122,21 @@ end
 
 M.guess_media_type = function(file_obj, file_obj_type)
   local media_type, media_type_id
-  media_type = file_obj.mime_type
+  media_type = file_obj.mime_type and file_obj.mime_type:lower()
   if media_type then
     media_type_id = TYPE_ID_MAP[media_type]
     if media_type_id then
       return media_type, media_type_id
     end
-    media_type = M.normalize_media_type(media_type)
-    return media_type, TYPE_ID_MAP[media_type] or DEFAULT_TYPE_ID
+    local media_type_table = M.parse_media_type(media_type)
+    if media_type_table then
+      media_type = M.normalize_media_type(media_type_table)
+      media_type_id = TYPE_ID_MAP[media_type]
+      if media_type_id then
+        return media_type, media_type_id
+      end
+    end
+    return media_type, DEFAULT_TYPE_ID
   end
   media_type = TG_TYPES_MEDIA_TYPES_MAP[file_obj_type]
   if not media_type then
