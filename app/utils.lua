@@ -123,11 +123,14 @@ end
 M.guess_media_type = function(file_obj, file_obj_type)
   local media_type, media_type_id
   media_type = file_obj.mime_type and file_obj.mime_type:lower()
+  -- guess by tg object 'mime_type' property
   if media_type then
+    -- try unprocessed 'mime_type'
     media_type_id = TYPE_ID_MAP[media_type]
     if media_type_id then
       return media_type, media_type_id
     end
+    -- try normalized 'mime_type'
     local media_type_table = M.parse_media_type(media_type)
     if media_type_table then
       media_type = M.normalize_media_type(media_type_table)
@@ -135,13 +138,16 @@ M.guess_media_type = function(file_obj, file_obj_type)
       if media_type_id then
         return media_type, media_type_id
       end
+      -- fallback unknown 'text/{subtype}' to 'text/plain'
+      if media_type_table[1] == 'text' then
+        media_type = 'text/plain'
+        return media_type, TYPE_ID_MAP[media_type]
+      end
     end
     return media_type, DEFAULT_TYPE_ID
   end
+  -- guess by tg object type
   media_type = TG_TYPES_MEDIA_TYPES_MAP[file_obj_type]
-  if not media_type then
-    return nil, nil
-  end
   return media_type, TYPE_ID_MAP[media_type] or DEFAULT_TYPE_ID
 end
 
