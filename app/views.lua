@@ -139,10 +139,7 @@ M.get_file = function(tiny_id, mode, extension)
     exit(ngx.HTTP_INTERNAL_SERVER_ERROR, err)
   end
 
-  local media_type = tiny_id_params.media_type
-  if not media_type and not extension then
-    media_type = 'application/octet-stream'
-  end
+  local media_type = tiny_id_params.media_type or 'application/octet-stream'
 
   local content_disposition
   if mode == GET_FILE_MODES.DOWNLOAD then
@@ -157,10 +154,7 @@ M.get_file = function(tiny_id, mode, extension)
     content_disposition = 'inline'
   end
 
-  if media_type then
-    -- if not media_type -> fallback to nginx mime.types (detect type by uri)
-    ngx.header['Content-Type'] = media_type
-  end
+  ngx.header['Content-Type'] = media_type
   ngx.header['Content-Disposition'] = content_disposition
   ngx.header['Content-Length'] = res.headers['Content-Length']
 
