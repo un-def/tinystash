@@ -13,6 +13,7 @@ local MEDIA_TYPES = {
   [7] = {'image/bmp', 'bmp'},
   [8] = {'image/gif', 'gif'},
   [16] = {'image/webp', 'webp'},
+  [19] = {'image/svg+xml', 'svg'},
   -- application types
   [9] = {'application/pdf', 'pdf'},
   [10] = {'application/xml', 'xml'},
@@ -26,7 +27,7 @@ local MEDIA_TYPES = {
   [17] = {'video/mp4', 'mp4'},
   [18] = {'video/webm', 'webm'},
 
-  -- [19] = {},   -- next index
+  -- [20] = {},   -- next index
 }
 
 

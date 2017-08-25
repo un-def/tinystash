@@ -1,4 +1,4 @@
-*All links and preview page*
+*All links and preview page*:
 {* render_link(modes.LINKS) *}
 
 *Direct download link*:
