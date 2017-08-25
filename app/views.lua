@@ -138,16 +138,27 @@ M.get_file = function(tiny_id, mode)
     log(res_json.description)
     exit(ngx.HTTP_NOT_FOUND, res_json.description)
   end
+  local file_path = res_json.result.file_path
 
   -- connect to tg file storage
-  local file_path = res_json.result.file_path
-  local path = ('/file/bot%s/%s'):format(config.tg.token, file_path)
+  local request_params = {}
+  request_params.path = utils.escape_uri(
+    ('/file/bot%s/%s'):format(config.tg.token, file_path))
+  if mode == GET_FILE_MODES.LINKS then
+    request_params.method = 'HEAD'
+  else
+    request_params.method = 'GET'
+  end
   httpc:connect(TG_API_HOST, 443)
   httpc:ssl_handshake(nil, TG_API_HOST, true)
-  res, err = httpc:request({path = utils.escape_uri(path)})
+  res, err = httpc:request(request_params)
   if not res then
     log(err)
     exit(ngx.HTTP_INTERNAL_SERVER_ERROR, err)
+  end
+  if res.status ~= ngx.HTTP_OK then
+    log('file response status %s != 200', res.status)
+    exit(ngx.HTTP_NOT_FOUND)
   end
 
   local file_name
