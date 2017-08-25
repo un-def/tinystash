@@ -22,11 +22,16 @@ local GET_FILE_MODES = constants.GET_FILE_MODES
 local CHUNK_SIZE = constants.CHUNK_SIZE
 
 
+local render_to_string = function(template_, context, plain)
+  return template.compile(template_, nil, plain)(context)
+end
+
+
 local M = {}
 
 
 M.main = function()
-  template.render('main.html', {
+  template.render('web/main.html', {
     title = 'Welcome',
     bot_username = config.tg.bot_username,
   })
@@ -66,8 +71,9 @@ M.webhook = function(secret)
       file_obj.mime_type, media_type, media_type_id)
     log('file_id: %s (%s bytes)', file_obj.file_id, file_obj.file_size)
     if file_obj.file_size and file_obj.file_size > MAX_FILE_SIZE then
-      response_text = ('The file is too big. Maximum file size is %s.'):format(
-        MAX_FILE_SIZE_AS_TEXT)
+      response_text = render_to_string('bot/err-file-too-big.txt', {
+        max_file_size = MAX_FILE_SIZE_AS_TEXT,
+      })
     else
       local tiny_id = tinyid.encode{
         file_id = file_obj.file_id,
@@ -77,13 +83,13 @@ M.webhook = function(secret)
       local extension = guess_extension(file_obj, file_obj_type, media_type)
       local link_template = ('%s/%%s/%s%s'):format(
         config.link_url_prefix, tiny_id, extension or '')
-      response_text = template.compile('bot-response.md'){
+      response_text = render_to_string('bot/ok-links.txt', {
         link_template = link_template,
         modes = GET_FILE_MODES,
-      }
+      })
     end
   else
-    response_text = 'Send me picture, audio, video, or file.'
+    response_text = render_to_string('bot/err-no-file.txt')
   end
 
   local params = {

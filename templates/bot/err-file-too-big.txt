@@ -1,0 +1,1 @@
+The file is too big. Maximum file size is {* max_file_size *}.
