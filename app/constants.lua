@@ -39,6 +39,7 @@ M.TG_TYPES_MEDIA_TYPES_MAP = {
 M.GET_FILE_MODES = {
   DOWNLOAD = 'dl',
   INLINE = 'il',
+  LINKS = 'ln',
 }
 
 M.TG_API_HOST = 'api.telegram.org'

@@ -1,5 +1,8 @@
-*Inline link (view in browser)*:
-{* link_template:format(modes.INLINE) *}
+*All links and preview page*
+{* render_link(modes.LINKS) *}
 
-*Download link*:
-{* link_template:format(modes.DOWNLOAD) *}
+*Direct download link*:
+{* render_link(modes.DOWNLOAD) *}{* extension *}
+
+*Direct inline link (view in browser)*:
+{* render_link(modes.INLINE) *}{* extension *}

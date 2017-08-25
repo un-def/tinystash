@@ -1,0 +1,21 @@
+{%
+  layout = 'web/layout.html'
+  local ln_link = render_link(modes.LINKS)
+  local dl_link = render_link(modes.DOWNLOAD)
+  local il_link = render_link(modes.INLINE)
+%}
+file name:   {{ file_name }}
+media type:  {{ media_type }}
+
+
+<a href="{{ ln_link }}">links and preview</a>:  {{ ln_link }}
+
+direct links{% if extension then %} without extension{% end %}:
+<a href="{{ dl_link }}">download</a>:           {{ dl_link }}
+<a href="{{ il_link }}">inline</a>:             {{ il_link }}
+
+{% if extension then %}
+direct links with extension:
+<a href="{{ dl_link }}{{ extension }}">download</a>:           {{ dl_link }}{{ extension }}
+<a href="{{ il_link }}{{ extension }}">inline</a>:             {{ il_link }}{{ extension }}
+{% end %}

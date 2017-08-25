@@ -151,19 +151,25 @@ M.guess_media_type = function(file_obj, file_obj_type)
   return media_type, TYPE_ID_MAP[media_type] or DEFAULT_TYPE_ID
 end
 
-M.guess_extension = function(file_obj, file_obj_type, media_type,
-                                 exclude_dot)
-  local ext, _
-  if file_obj.file_name then
-    _, ext = M.split_ext(file_obj.file_name, true)
+M.guess_extension = function(params)
+  -- required params: file_obj AND file_obj_type OR file_name
+  -- optional params: media_type, exclude_dot
+  local ext, file_name, _
+  if params.file_obj then
+    file_name = params.file_obj.file_name
+  else
+    file_name = params.file_name
   end
-  if not ext then
-    ext = TG_TYPES_EXTENSIONS_MAP[file_obj_type]
+  if file_name then
+    _, ext = M.split_ext(file_name, true)
   end
-  if not ext and media_type then
-    ext = TYPE_EXT_MAP[media_type]
+  if not ext and params.file_obj_type then
+    ext = TG_TYPES_EXTENSIONS_MAP[params.file_obj_type]
   end
-  if ext and not exclude_dot then
+  if not ext and params.media_type then
+    ext = TYPE_EXT_MAP[params.media_type]
+  end
+  if ext and not params.exclude_dot then
     return '.' .. ext
   end
   return ext

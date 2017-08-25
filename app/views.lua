@@ -26,6 +26,13 @@ local render_to_string = function(template_, context, plain)
   return template.compile(template_, nil, plain)(context)
 end
 
+local render_link_factory = function(tiny_id)
+  local link_template = ('%s/%%s/%s'):format(config.link_url_prefix, tiny_id)
+  return function(mode)
+    return link_template:format(mode)
+  end
+end
+
 
 local M = {}
 
@@ -80,12 +87,15 @@ M.webhook = function(secret)
         media_type_id = media_type_id,
       }
       log('tiny_id: %s', tiny_id)
-      local extension = guess_extension(file_obj, file_obj_type, media_type)
-      local link_template = ('%s/%%s/%s%s'):format(
-        config.link_url_prefix, tiny_id, extension or '')
+      local extension = guess_extension{
+        file_obj = file_obj,
+        file_obj_type = file_obj_type,
+        media_type = media_type,
+      }
       response_text = render_to_string('bot/ok-links.txt', {
-        link_template = link_template,
         modes = GET_FILE_MODES,
+        render_link = render_link_factory(tiny_id),
+        extension = extension,
       })
     end
   else
@@ -103,14 +113,15 @@ M.webhook = function(secret)
 end
 
 
-M.get_file = function(tiny_id, mode, extension)
-  if extension == '' then extension = nil end
+M.get_file = function(tiny_id, mode)
+  -- decode tinyid
   local tiny_id_params, tiny_id_err = tinyid.decode(tiny_id)
   if not tiny_id_params then
     log('tiny_id decode error: %s', tiny_id_err)
     exit(ngx.HTTP_NOT_FOUND)
   end
 
+  -- get file info
   local httpc = http.new()
   httpc:set_timeout(30000)
   local res, err
@@ -121,7 +132,6 @@ M.get_file = function(tiny_id, mode, extension)
     log(err)
     exit(ngx.HTTP_INTERNAL_SERVER_ERROR, err)
   end
-
   log(res.body)
   local res_json = json.decode(res.body)
   if not res_json.ok then
@@ -129,6 +139,7 @@ M.get_file = function(tiny_id, mode, extension)
     exit(ngx.HTTP_NOT_FOUND, res_json.description)
   end
 
+  -- connect to tg file storage
   local file_path = res_json.result.file_path
   local path = ('/file/bot%s/%s'):format(config.tg.token, file_path)
   httpc:connect(TG_API_HOST, 443)
@@ -139,36 +150,59 @@ M.get_file = function(tiny_id, mode, extension)
     exit(ngx.HTTP_INTERNAL_SERVER_ERROR, err)
   end
 
-  local media_type = tiny_id_params.media_type or 'application/octet-stream'
-
-  local content_disposition
-  if mode == GET_FILE_MODES.DOWNLOAD then
-    local file_name = utils.get_basename(file_path)
+  local file_name
+  if mode == GET_FILE_MODES.DOWNLOAD or mode == GET_FILE_MODES.LINKS then
+    file_name = utils.get_basename(file_path)
     -- fix voice message file .oga extension
     if file_path:match('^voice/.+%.oga$') then
       file_name = ('%s.%s'):format(
         utils.split_ext(file_name), TG_TYPES_EXTENSIONS_MAP[TG_TYPES.VOICE])
     end
-    content_disposition = ('attachment; filename="%s"'):format(file_name)
-  elseif mode == GET_FILE_MODES.INLINE then
-    content_disposition = 'inline'
   end
 
-  ngx.header['Content-Type'] = media_type
-  ngx.header['Content-Disposition'] = content_disposition
-  ngx.header['Content-Length'] = res.headers['Content-Length']
+  local media_type = tiny_id_params.media_type or 'application/octet-stream'
 
-  local chunk
-  while true do
-    chunk, err = res.body_reader(CHUNK_SIZE)
-    if err then
-      log(ngx.ERR, err)
-      break
+  if mode == GET_FILE_MODES.LINKS then
+    -- /ln/ -> render links page
+    local extension = guess_extension{
+      file_name = file_name,
+      media_type = media_type,
+    }
+    template.render('web/file-links.html', {
+      title = file_name,
+      file_name = file_name,
+      media_type = media_type,
+      modes = GET_FILE_MODES,
+      render_link = render_link_factory(tiny_id),
+      extension = extension,
+    })
+  else
+    -- /dl/ or /il/ -> stream file content from tg file storage
+    local content_disposition
+    if mode == GET_FILE_MODES.DOWNLOAD then
+      content_disposition = ('attachment; filename="%s"'):format(file_name)
+    else
+      content_disposition = 'inline'
     end
-    if not chunk then break end
-    ngx.print(chunk)
+
+    ngx.header['Content-Type'] = media_type
+    ngx.header['Content-Disposition'] = content_disposition
+    ngx.header['Content-Length'] = res.headers['Content-Length']
+
+    local chunk
+    while true do
+      chunk, err = res.body_reader(CHUNK_SIZE)
+      if err then
+        log(ngx.ERR, err)
+        break
+      end
+      if not chunk then break end
+      ngx.print(chunk)
+    end
+
   end
 
+  -- put connection to connection pool
   httpc:set_keepalive()
 
 end
