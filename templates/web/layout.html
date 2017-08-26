@@ -1,7 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% if title then %}{{ title }}{* ' &mdash; ' *}{% end %}[tiny]stash</title>
-<body>
-  <pre>{* view *}</pre>
-</body>
+  <style>
+    body {
+      font-family: monospace;
+      color: #24292e;
+      white-space: pre-wrap;
+    }
+  </style>
+<body>{* view *}</body>
 </html>
