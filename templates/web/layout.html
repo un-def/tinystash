@@ -4,10 +4,28 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% if title then %}{{ title }}{* ' &mdash; ' *}{% end %}[tiny]stash</title>
   <style>
+    html {
+      font-size: 62.5%;
+    }
     body {
+      background-color: #f8f8f8;
       font-family: monospace;
+      font-size: 1.8rem;
       color: #24292e;
       white-space: pre-wrap;
+    }
+    footer {
+      position: absolute;
+      bottom: 2rem;
+      left: 0;
+      width: 100%;
+      font-size: 1.2rem;
+      color: #7e868c;
+      text-align: center;
+    }
+    .footnote-block {
+      font-size: 1.4rem;
+      border-top: 1px solid #c0c0c0;
     }
   </style>
 <body>{* view *}</body>

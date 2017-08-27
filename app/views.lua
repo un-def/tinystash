@@ -39,7 +39,6 @@ local M = {}
 
 M.main = function()
   template.render('web/main.html', {
-    title = 'Welcome',
     bot_username = config.tg.bot_username,
   })
 end
