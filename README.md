@@ -37,8 +37,15 @@ $ /path/to/openresty/nginx/sbin/nginx -c conf/nginx.conf -p .
 ```
 
 
+### License
+
+[MIT License][license]
+
+
+
 [telegram]: http://telegram.org/
 [lua]: https://lua.org/
 [openresty]: https://openresty.org/
 [openresty_installation]: https://openresty.org/en/installation.html
 [tinystash_bot]: https://t.me/tinystash_bot
+[license]: https://github.com/un-def/tinystash/blob/master/LICENSE
