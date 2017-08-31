@@ -5,6 +5,7 @@ local TG_TYPES_MEDIA_TYPES_MAP = constants.TG_TYPES_MEDIA_TYPES_MAP
 local TG_TYPES_EXTENSIONS_MAP = constants.TG_TYPES_EXTENSIONS_MAP
 local DEFAULT_TYPE_ID = mediatypes.DEFAULT_TYPE_ID
 local TYPE_ID_MAP = mediatypes.TYPE_ID_MAP
+local ID_TYPE_MAP = mediatypes.ID_TYPE_MAP
 local TYPE_EXT_MAP = mediatypes.TYPE_EXT_MAP
 
 
@@ -87,6 +88,9 @@ M.parse_media_type = function(media_type)
   if not type_ then
     return nil, 'Media type parse error'
   end
+  if suffix == '' then
+    suffix = nil
+  end
   local x = false
   if subtype:sub(1, 2) == 'x-' then
     subtype = subtype:sub(3)
@@ -104,10 +108,6 @@ M.normalize_media_type = function(media_type)
     if not media_type_table then return media_type end
   end
   local type_, subtype, suffix = unpack(media_type_table)
-  -- normalize audio/[x-]{codec}+ogg, e.g., audio/x-vorbis+ogg
-  if suffix == 'ogg' and type_ == 'audio' then
-    return 'audio/ogg'
-  end
   -- normalize {type}/{subtype}+xml, e.g., text/html+xml
   if suffix == 'xml' then
     if subtype == 'html' then
@@ -116,8 +116,16 @@ M.normalize_media_type = function(media_type)
       return type_ .. '/xml'
     end
   end
-  -- remove 'x-' subtype prefix and suffix
-  return type_ .. '/' .. subtype
+  -- remove 'x-' subtype prefix
+  return ('%s/%s%s'):format(type_, subtype, suffix and '+' .. suffix or '')
+end
+
+local _get_media_type_id = function(media_type)
+  local media_type_id = TYPE_ID_MAP[media_type]
+  if media_type_id then
+    media_type = ID_TYPE_MAP[media_type_id]
+  end
+  return media_type_id, media_type
 end
 
 M.guess_media_type = function(file_obj, file_obj_type)
@@ -126,29 +134,31 @@ M.guess_media_type = function(file_obj, file_obj_type)
   -- guess by tg object 'mime_type' property
   if media_type then
     -- try unprocessed 'mime_type'
-    media_type_id = TYPE_ID_MAP[media_type]
+    media_type_id, media_type = _get_media_type_id(media_type)
     if media_type_id then
-      return media_type, media_type_id
+      return media_type_id, media_type
     end
     -- try normalized 'mime_type'
     local media_type_table = M.parse_media_type(media_type)
     if media_type_table then
       media_type = M.normalize_media_type(media_type_table)
-      media_type_id = TYPE_ID_MAP[media_type]
+      media_type_id, media_type = _get_media_type_id(media_type)
       if media_type_id then
-        return media_type, media_type_id
+        return media_type_id, media_type
       end
       -- fallback unknown 'text/{subtype}' to 'text/plain'
       if media_type_table[1] == 'text' then
-        media_type = 'text/plain'
-        return media_type, TYPE_ID_MAP[media_type]
+        return _get_media_type_id('text/plain')
       end
     end
-    return media_type, DEFAULT_TYPE_ID
+    return DEFAULT_TYPE_ID, nil
   end
   -- guess by tg object type
   media_type = TG_TYPES_MEDIA_TYPES_MAP[file_obj_type]
-  return media_type, TYPE_ID_MAP[media_type] or DEFAULT_TYPE_ID
+  if media_type then
+    return _get_media_type_id(media_type)
+  end
+  return DEFAULT_TYPE_ID, nil
 end
 
 M.guess_extension = function(params)

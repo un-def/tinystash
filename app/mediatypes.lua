@@ -1,12 +1,15 @@
 local DEFAULT_TYPE_ID = 0
 
--- keep this array dense!
+-- KEEP THIS ARRAY DENSE!
+-- format: [media type id] = {'correct media type', ...aliases..., extension}
+-- specify media types without 'x-', e.g., 'text/lua' instead of 'text/x-lua'
 local MEDIA_TYPES = {
   -- audio types
-  [1] = {'audio/mpeg', 'mp3'},
+  [1] = {'audio/mpeg', 'audio/mp3', 'mp3'},
   [2] = {'audio/mp4', 'm4a'},
   [3] = {'audio/flac', 'flac'},
-  [4] = {'audio/ogg', 'ogg'},
+  [4] = {'audio/ogg', 'audio/vorbis+ogg', 'audio/opus+ogg',
+         'audio/flac+ogg', 'audio/speex+ogg', 'audio/speex', 'ogg'},
   -- image types
   [5] = {'image/jpeg', 'jpg'},
   [6] = {'image/png', 'png'},
@@ -37,10 +40,20 @@ local TYPE_EXT_MAP = {}
 
 
 for media_type_id = 1, #MEDIA_TYPES do
-  local media_type, extension = unpack(MEDIA_TYPES[media_type_id])
+  local media_type_table = MEDIA_TYPES[media_type_id]
+  local media_type_table_size = #media_type_table
+  local media_type = media_type_table[1]
+  local extension = media_type_table[media_type_table_size]
   TYPE_ID_MAP[media_type] = media_type_id
   ID_TYPE_MAP[media_type_id] = media_type
   TYPE_EXT_MAP[media_type] = extension
+  if media_type_table_size > 2 then
+    for index = 2, media_type_table_size-1 do
+      local media_type_alias = media_type_table[index]
+      TYPE_ID_MAP[media_type_alias] = media_type_id
+      TYPE_EXT_MAP[media_type_alias] = extension
+    end
+  end
 end
 
 

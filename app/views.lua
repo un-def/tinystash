@@ -71,7 +71,7 @@ M.webhook = function(secret)
   end
 
   if file_obj and file_obj.file_id then
-    local media_type, media_type_id = guess_media_type(file_obj, file_obj_type)
+    local media_type_id, media_type = guess_media_type(file_obj, file_obj_type)
     log('file_obj_type: %s', file_obj_type)
     log('media_type: %s -> %s (%s)',
       file_obj.mime_type, media_type, media_type_id)
