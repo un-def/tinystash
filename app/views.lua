@@ -33,6 +33,17 @@ local render_link_factory = function(tiny_id)
   end
 end
 
+local send_webhook_response = function(chat_id, template_, context)
+  ngx.header['Content-Type'] = 'application/json'
+  ngx.print(json.encode{
+    method = 'sendMessage',
+    chat_id = chat_id,
+    text = render_to_string(template_, context),
+    parse_mode = 'markdown',
+  })
+  exit(ngx.HTTP_OK)
+end
+
 
 local M = {}
 
@@ -58,7 +69,9 @@ M.webhook = function(secret)
     exit(ngx.HTTP_OK)
   end
 
-  local file_obj, file_obj_type, response_text
+  local chat_id = message.from.id
+
+  local file_obj, file_obj_type
   for _, _file_obj_type in pairs(TG_TYPES) do
     file_obj = message[_file_obj_type]
     if file_obj then
@@ -70,45 +83,37 @@ M.webhook = function(secret)
     end
   end
 
-  if file_obj and file_obj.file_id then
-    local media_type_id, media_type = guess_media_type(file_obj, file_obj_type)
-    log('file_obj_type: %s', file_obj_type)
-    log('media_type: %s -> %s (%s)',
-      file_obj.mime_type, media_type, media_type_id)
-    log('file_id: %s (%s bytes)', file_obj.file_id, file_obj.file_size)
-    if file_obj.file_size and file_obj.file_size > MAX_FILE_SIZE then
-      response_text = render_to_string('bot/err-file-too-big.txt', {
-        max_file_size = MAX_FILE_SIZE_AS_TEXT,
-      })
-    else
-      local tiny_id = tinyid.encode{
-        file_id = file_obj.file_id,
-        media_type_id = media_type_id,
-      }
-      log('tiny_id: %s', tiny_id)
-      local extension = guess_extension{
-        file_obj = file_obj,
-        file_obj_type = file_obj_type,
-        media_type = media_type,
-      }
-      response_text = render_to_string('bot/ok-links.txt', {
-        modes = GET_FILE_MODES,
-        render_link = render_link_factory(tiny_id),
-        extension = extension,
-      })
-    end
-  else
-    response_text = render_to_string('bot/err-no-file.txt')
+  if not file_obj or not file_obj.file_id then
+    send_webhook_response(chat_id, 'bot/err-no-file.txt')
   end
 
-  local params = {
-    method = 'sendMessage',
-    chat_id = message.from.id,
-    text = response_text,
-    parse_mode = 'markdown',
+  if file_obj.file_size and file_obj.file_size > MAX_FILE_SIZE then
+    send_webhook_response(chat_id, 'bot/err-file-too-big.txt', {
+      max_file_size = MAX_FILE_SIZE_AS_TEXT,
+    })
+  end
+
+  local media_type_id, media_type = guess_media_type(file_obj, file_obj_type)
+  local tiny_id = tinyid.encode{
+    file_id = file_obj.file_id,
+    media_type_id = media_type_id,
   }
-  ngx.header['Content-Type'] = 'application/json'
-  ngx.print(json.encode(params))
+  local extension = guess_extension{
+    file_obj = file_obj,
+    file_obj_type = file_obj_type,
+    media_type = media_type,
+  }
+  log('file_obj_type: %s', file_obj_type)
+  log('media_type: %s -> %s (%s)',
+    file_obj.mime_type, media_type, media_type_id)
+  log('file_id: %s (%s bytes)', file_obj.file_id, file_obj.file_size)
+  log('tiny_id: %s', tiny_id)
+  send_webhook_response(chat_id, 'bot/ok-links.txt', {
+    modes = GET_FILE_MODES,
+    render_link = render_link_factory(tiny_id),
+    extension = extension,
+  })
+
 end
 
 
