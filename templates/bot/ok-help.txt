@@ -2,5 +2,5 @@
 
 Send me any content, and I'll generate public HTTP link for it.
 
-{(includes/supported_types.txt)}
-{(includes/max_file_size.txt)}
+{( includes/supported_types.txt )}
+{( includes/max_file_size.txt )}

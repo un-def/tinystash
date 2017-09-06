@@ -1,1 +1,2 @@
-{- raw -}There is no file in your message. See /help for supported content types.{- raw -}
+{( includes/user_mention.txt )}
+There is no file in your message. See /help for supported content types.

@@ -1,3 +1,4 @@
+{( includes/user_mention.txt )}
 *All links and preview page*:
 {* render_link(modes.LINKS) *}
 
