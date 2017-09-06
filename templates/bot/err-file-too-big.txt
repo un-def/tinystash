@@ -1,1 +1,1 @@
-The file is too big. Maximum file size is {* max_file_size *}.
+The file is too big. {(includes/max_file_size.txt)}

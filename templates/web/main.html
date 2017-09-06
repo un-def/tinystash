@@ -1,15 +1,11 @@
 {% layout = 'web/layout.html' %}
 <strong>&#7511;&#8305;&#8319;&#696;[stash]</strong><sup>1</sup> is the easiest way<sup>[citation needed]</sup> to share files from <a href="https://telegram.org/">Telegram</a> to the public internet.
-Just send anything<sup>2</sup> to <a href="https://t.me/{{ bot_username }}">@{{ bot_username }}</a> Telegram bot and get public HTTP link.
+Just send anything<sup>2,3</sup> to <a href="https://t.me/{{ bot_username }}">@{{ bot_username }}</a> Telegram bot and get public HTTP link.
 
 
 <div class="footnote-block">
 <sup>1</sup> tinystash
-<sup>2</sup> Currently supported content types include: photos, audio, voice notes, videos, video notes, stickers, and documents (regular files).
+<sup>2</sup> {(includes/supported_types.txt)}<sup>3</sup> {(includes/max_file_size.txt)}
 </div>
-
-
-
-
 
 <footer>Created by <a href="https://undef.im/">un.def</a>. Powered by <a href="https://lua.org/">Lua</a> and <a href="https://openresty.org/">OpenResty</a>.</footer>

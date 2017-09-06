@@ -15,9 +15,9 @@ local guess_extension = utils.guess_extension
 
 local TG_TYPES = constants.TG_TYPES
 local TG_TYPES_EXTENSIONS_MAP = constants.TG_TYPES_EXTENSIONS_MAP
+local TG_CHAT_PRIVATE = constants.TG_CHAT_PRIVATE
 local TG_API_HOST = constants.TG_API_HOST
-local MAX_FILE_SIZE = constants.MAX_FILE_SIZE
-local MAX_FILE_SIZE_AS_TEXT = constants.MAX_FILE_SIZE_AS_TEXT
+local TG_MAX_FILE_SIZE = constants.TG_MAX_FILE_SIZE
 local GET_FILE_MODES = constants.GET_FILE_MODES
 local CHUNK_SIZE = constants.CHUNK_SIZE
 
@@ -69,7 +69,20 @@ M.webhook = function(secret)
     exit(ngx.HTTP_OK)
   end
 
-  local chat_id = message.from.id
+  local chat_id = message.chat.id
+  local is_groupchat = message.chat.type ~= TG_CHAT_PRIVATE
+
+  if message.text then
+    local command, bot_username = message.text:match('^/([%w_]+)@?([%w_]*)')
+    if not command then
+      send_webhook_response(chat_id, 'bot/err-no-file.txt')
+    end
+    -- ignore groupchat commands to other bots / commands without bot username
+    if is_groupchat and bot_username ~= config.tg.bot_username then
+      exit(ngx.HTTP_OK)
+    end
+    send_webhook_response(chat_id, 'bot/ok-help.txt')
+  end
 
   local file_obj, file_obj_type
   for _, _file_obj_type in pairs(TG_TYPES) do
@@ -87,10 +100,8 @@ M.webhook = function(secret)
     send_webhook_response(chat_id, 'bot/err-no-file.txt')
   end
 
-  if file_obj.file_size and file_obj.file_size > MAX_FILE_SIZE then
-    send_webhook_response(chat_id, 'bot/err-file-too-big.txt', {
-      max_file_size = MAX_FILE_SIZE_AS_TEXT,
-    })
+  if file_obj.file_size and file_obj.file_size > TG_MAX_FILE_SIZE then
+    send_webhook_response(chat_id, 'bot/err-file-too-big.txt')
   end
 
   local media_type_id, media_type = guess_media_type(file_obj, file_obj_type)

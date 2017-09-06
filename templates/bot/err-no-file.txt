@@ -1,1 +1,1 @@
-{- raw -}Send me picture, audio, video, or file.{- raw -}
+{- raw -}There is no file in your message. See /help for supported content types.{- raw -}

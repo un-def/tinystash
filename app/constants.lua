@@ -36,16 +36,17 @@ M.TG_TYPES_MEDIA_TYPES_MAP = {
   [STICKER] = 'image/webp',
 }
 
+M.TG_CHAT_PRIVATE = 'private'
+
+M.TG_API_HOST = 'api.telegram.org'
+
+M.TG_MAX_FILE_SIZE = 20971520
+
 M.GET_FILE_MODES = {
   DOWNLOAD = 'dl',
   INLINE = 'il',
   LINKS = 'ln',
 }
-
-M.TG_API_HOST = 'api.telegram.org'
-
-M.MAX_FILE_SIZE = 20971520
-M.MAX_FILE_SIZE_AS_TEXT = '20 MiB'
 
 M.CHUNK_SIZE = 8192
 
