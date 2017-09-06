@@ -74,17 +74,23 @@ M.webhook = function(secret)
     exit(ngx.HTTP_OK)
   end
 
+  local is_groupchat = message.chat.type ~= TG_CHAT_PRIVATE
+
   if message.text then
     local command, bot_username = message.text:match('^/([%w_]+)@?([%w_]*)')
     if not command then
       send_webhook_response(message, 'bot/err-no-file.txt')
     end
     -- ignore groupchat commands to other bots / commands without bot username
-    if (message.chat.type ~= TG_CHAT_PRIVATE and
-        bot_username ~= config.tg.bot_username) then
+    if is_groupchat and bot_username ~= config.tg.bot_username then
       exit(ngx.HTTP_OK)
     end
     send_webhook_response(message, 'bot/ok-help.txt')
+  end
+
+  -- tricky way to ignore groupchat service messages (e.g., new_chat_member)
+  if is_groupchat and not message.reply_to_message then
+    exit(ngx.HTTP_OK)
   end
 
   local file_obj, file_obj_type
