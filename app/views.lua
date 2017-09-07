@@ -217,6 +217,7 @@ M.get_file = function(tiny_id, mode)
     end
   end
 
+  local file_size = res.headers['Content-Length']
   local media_type = tiny_id_params.media_type or 'application/octet-stream'
 
   if mode == GET_FILE_MODES.LINKS then
@@ -228,6 +229,7 @@ M.get_file = function(tiny_id, mode)
     template.render('web/file-links.html', {
       title = file_name,
       file_name = file_name,
+      file_size = file_size,
       media_type = media_type,
       modes = GET_FILE_MODES,
       render_link = render_link_factory(tiny_id),
@@ -244,7 +246,7 @@ M.get_file = function(tiny_id, mode)
 
     ngx.header['Content-Type'] = media_type
     ngx.header['Content-Disposition'] = content_disposition
-    ngx.header['Content-Length'] = res.headers['Content-Length']
+    ngx.header['Content-Length'] = file_size
 
     local chunk
     while true do
