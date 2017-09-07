@@ -10,6 +10,7 @@ local config = require('config')
 
 local log = utils.log
 local exit = utils.exit
+local escape_uri = utils.escape_uri
 local guess_media_type = utils.guess_media_type
 local guess_extension = utils.guess_extension
 
@@ -20,6 +21,7 @@ local TG_API_HOST = constants.TG_API_HOST
 local TG_MAX_FILE_SIZE = constants.TG_MAX_FILE_SIZE
 local GET_FILE_MODES = constants.GET_FILE_MODES
 local CHUNK_SIZE = constants.CHUNK_SIZE
+local TIMEOUT = constants.TIMEOUT
 
 
 local render_to_string = function(template_, context, plain)
@@ -35,6 +37,7 @@ end
 
 local send_webhook_response = function(message, template_, context)
   local chat = message.chat
+  -- context table mutation!
   if chat.type ~= TG_CHAT_PRIVATE then
     context = context or {}
     context.user = message.from
@@ -47,6 +50,25 @@ local send_webhook_response = function(message, template_, context)
     parse_mode = 'markdown',
   })
   exit(ngx.HTTP_OK)
+end
+
+local request_tg_server = function(http_obj, params, decode_json)
+  -- params table mutation!
+  params.path = params.path:format(config.tg.token)
+  local res, err
+  res, err = http_obj:connect(TG_API_HOST, 443)
+  if not res then return nil, err end
+  res, err = http_obj:ssl_handshake(nil, TG_API_HOST, true)
+  if not res then return nil, err end
+  res, err = http_obj:request(params)
+  if not res then return nil, err end
+  -- don't forget to call :close or :set_keepalive
+  if not decode_json then return res end
+  local body
+  body, err = res:read_body()
+  http_obj:set_keepalive()
+  if not body then return nil, err end
+  return json.decode(body)
 end
 
 
@@ -145,37 +167,37 @@ M.get_file = function(tiny_id, mode)
     exit(ngx.HTTP_NOT_FOUND)
   end
 
+  local http_obj = http.new()
+  http_obj:set_timeout(TIMEOUT)
+  local res, err, params
+
   -- get file info
-  local httpc = http.new()
-  httpc:set_timeout(30000)
-  local res, err
-  local uri = ('https://%s/bot%s/getFile?file_id=%s'):format(
-    TG_API_HOST, config.tg.token, tiny_id_params.file_id)
-  res, err = httpc:request_uri(uri)
+  params = {
+    path = '/bot%s/getFile',
+    query = 'file_id=' .. tiny_id_params.file_id,
+  }
+  res, err = request_tg_server(http_obj, params, true)
   if not res then
     log(err)
     exit(ngx.HTTP_INTERNAL_SERVER_ERROR, err)
   end
-  log(res.body)
-  local res_json = json.decode(res.body)
-  if not res_json.ok then
-    log(res_json.description)
-    exit(ngx.HTTP_NOT_FOUND, res_json.description)
+  if not res.ok then
+    log(res.description)
+    exit(ngx.HTTP_NOT_FOUND, res.description)
   end
-  local file_path = res_json.result.file_path
+
+  local file_path = res.result.file_path
 
   -- connect to tg file storage
-  local request_params = {}
-  request_params.path = utils.escape_uri(
-    ('/file/bot%s/%s'):format(config.tg.token, file_path))
+  params = {
+    path = escape_uri('/file/bot%s/' .. file_path)
+  }
   if mode == GET_FILE_MODES.LINKS then
-    request_params.method = 'HEAD'
+    params.method = 'HEAD'
   else
-    request_params.method = 'GET'
+    params.method = 'GET'
   end
-  httpc:connect(TG_API_HOST, 443)
-  httpc:ssl_handshake(nil, TG_API_HOST, true)
-  res, err = httpc:request(request_params)
+  res, err = request_tg_server(http_obj, params)
   if not res then
     log(err)
     exit(ngx.HTTP_INTERNAL_SERVER_ERROR, err)
@@ -238,7 +260,7 @@ M.get_file = function(tiny_id, mode)
   end
 
   -- put connection to connection pool
-  httpc:set_keepalive()
+  http_obj:set_keepalive()
 
 end
 

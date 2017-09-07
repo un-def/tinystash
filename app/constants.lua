@@ -50,5 +50,7 @@ M.GET_FILE_MODES = {
 
 M.CHUNK_SIZE = 8192
 
+M.TIMEOUT = 10000
+
 
 return M
