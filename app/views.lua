@@ -48,6 +48,7 @@ local send_webhook_response = function(message, template_, context)
     chat_id = chat.id,
     text = render_to_string(template_, context),
     parse_mode = 'markdown',
+    disable_web_page_preview = true,
   })
   exit(ngx.HTTP_OK)
 end

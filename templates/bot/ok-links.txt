@@ -1,9 +1,9 @@
 {( includes/user_mention.txt )}
-*All links and preview page*:
-{* render_link(modes.LINKS) *}
+*Direct inline link (view in browser)*:
+{* render_link(modes.INLINE) *}{* extension *}
 
 *Direct download link*:
 {* render_link(modes.DOWNLOAD) *}{* extension *}
 
-*Direct inline link (view in browser)*:
-{* render_link(modes.INLINE) *}{* extension *}
+*All links and preview page*:
+{* render_link(modes.LINKS) *}
