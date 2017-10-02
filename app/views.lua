@@ -208,14 +208,11 @@ M.get_file = function(tiny_id, mode)
     exit(ngx.HTTP_NOT_FOUND)
   end
 
-  local file_name
-  if mode == GET_FILE_MODES.DOWNLOAD or mode == GET_FILE_MODES.LINKS then
-    file_name = utils.get_basename(file_path)
-    -- fix voice message file .oga extension
-    if file_path:match('^voice/.+%.oga$') then
-      file_name = ('%s.%s'):format(
-        utils.split_ext(file_name), TG_TYPES_EXTENSIONS_MAP[TG_TYPES.VOICE])
-    end
+  local file_name = utils.get_basename(file_path)
+  -- fix voice message file .oga extension
+  if file_path:match('^voice/.+%.oga$') then
+    file_name = ('%s.%s'):format(
+      utils.split_ext(file_name), TG_TYPES_EXTENSIONS_MAP[TG_TYPES.VOICE])
   end
 
   local file_size = res.headers['Content-Length']
@@ -240,13 +237,14 @@ M.get_file = function(tiny_id, mode)
     -- /dl/ or /il/ -> stream file content from tg file storage
     local content_disposition
     if mode == GET_FILE_MODES.DOWNLOAD then
-      content_disposition = ('attachment; filename="%s"'):format(file_name)
+      content_disposition = 'attachment'
     else
       content_disposition = 'inline'
     end
 
     ngx.header['Content-Type'] = media_type
-    ngx.header['Content-Disposition'] = content_disposition
+    ngx.header['Content-Disposition'] = ('%s; filename="%s"'):format(
+      content_disposition, file_name)
     ngx.header['Content-Length'] = file_size
 
     local chunk
