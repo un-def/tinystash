@@ -208,25 +208,25 @@ M.get_file = function(tiny_id, mode)
     exit(ngx.HTTP_NOT_FOUND)
   end
 
-  local file_name = utils.get_basename(file_path)
-  -- fix voice message file .oga extension
-  if file_path:match('^voice/.+%.oga$') then
-    file_name = ('%s.%s'):format(
-      utils.split_ext(file_name), TG_TYPES_EXTENSIONS_MAP[TG_TYPES.VOICE])
-  end
-
   local file_size = res.headers['Content-Length']
   local media_type = tiny_id_params.media_type or 'application/octet-stream'
 
-  if mode == GET_FILE_MODES.LINKS then
-    -- /ln/ -> render links page
-    local extension = guess_extension{
-      file_name = file_name,
+  local extension
+  -- fix voice message file .oga extension
+  if file_path:match('^voice/.+%.oga$') then
+    extension = '.' .. TG_TYPES_EXTENSIONS_MAP[TG_TYPES.VOICE]
+  else
+    extension = guess_extension{
+      file_name = file_path,
       media_type = media_type,
     }
+  end
+  local file_name = tiny_id .. (extension or '')
+
+  if mode == GET_FILE_MODES.LINKS then
+    -- /ln/ -> render links page
     template.render('web/file-links.html', {
-      title = file_name,
-      file_name = file_name,
+      title = tiny_id,
       file_size = file_size,
       media_type = media_type,
       modes = GET_FILE_MODES,
