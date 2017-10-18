@@ -16,5 +16,6 @@ return {
   },
 
   link_url_prefix = 'https://example.com',
+  hide_image_download_link = false,
 
 }
