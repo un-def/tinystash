@@ -146,6 +146,7 @@ M.webhook = function(secret)
     media_type = media_type,
   }
   local hide_download_link = (config.hide_image_download_link
+                              and media_type
                               and media_type:sub(1, 6) == 'image/')
   log('file_obj_type: %s', file_obj_type)
   log('media_type: %s -> %s (%s)',
