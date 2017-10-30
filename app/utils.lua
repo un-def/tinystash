@@ -21,8 +21,10 @@ M.log = function(...)
   else
     args_offset = 3
   end
-  message = tostring(message)
-  ngx.log(level, '\n\n*** ', message:format(select(args_offset, ...)), '\n')
+  if select('#', ...) - args_offset > -1 then
+    message = tostring(message):format(select(args_offset, ...))
+  end
+  ngx.log(level, '\n\n*** ', message, '\n')
 end
 
 M.exit = function(status, content)
