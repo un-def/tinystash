@@ -89,9 +89,8 @@ M.webhook = function(secret)
   end
   ngx.req.read_body()
   local req_body = ngx.req.get_body_data()
-  log(req_body)
-
   local req_json = json.decode(req_body)
+  log(req_json and json.encode(req_json) or req_body)
   local message = req_json and req_json.message
   if not message then
     exit(ngx.HTTP_OK)
