@@ -24,8 +24,8 @@ $ while read PNAME; do opm --cwd get $PNAME; done < requirements.opm
 Copy app and nginx configs from examples and edit them:
 
 ```shell
-$ cp config.example.lua config.lua
-$ cp conf/nginx.example.conf conf/nginx.conf
+$ cp config/app.example.lua config/app.lua
+$ cp config/nginx.example.conf config/nginx.conf
 ```
 
 
@@ -33,7 +33,7 @@ $ cp conf/nginx.example.conf conf/nginx.conf
 
 ```shell
 $ cd /path/to/tinystash
-$ /path/to/openresty/nginx/sbin/nginx -c conf/nginx.conf -p .
+$ /path/to/openresty/nginx/sbin/nginx -c config/nginx.conf -p .
 ```
 
 

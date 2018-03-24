@@ -6,7 +6,7 @@ local tinyid = require('app.tinyid')
 local utils = require('app.utils')
 local constants = require('app.constants')
 
-local config = require('config')
+local config = require('config.app')
 
 local log = utils.log
 local exit = utils.exit

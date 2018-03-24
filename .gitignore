@@ -3,5 +3,5 @@ logs/
 resty_modules/
 
 *.sh
-conf/nginx.conf
-config.lua
+config/nginx.conf
+config/app.lua
