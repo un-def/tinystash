@@ -90,7 +90,7 @@ M.webhook = function(secret)
   ngx.req.read_body()
   local req_body = ngx.req.get_body_data()
   local req_json = json.decode(req_body)
-  log(req_json and json.encode(req_json) or req_body)
+  log('webhook request: %s', req_json and json.encode(req_json) or req_body)
   local message = req_json and req_json.message
   if not message then
     exit(ngx.HTTP_OK)
@@ -167,7 +167,7 @@ M.get_file = function(tiny_id, mode)
   -- decode tinyid
   local tiny_id_params, tiny_id_err = tinyid.decode(tiny_id)
   if not tiny_id_params then
-    log('tiny_id decode error: %s', tiny_id_err)
+    log(ngx.INFO, 'tiny_id decode error: %s', tiny_id_err)
     exit(ngx.HTTP_NOT_FOUND)
   end
 
@@ -182,11 +182,11 @@ M.get_file = function(tiny_id, mode)
   }
   res, err = request_tg_server(http_obj, params, true)
   if not res then
-    log(err)
+    log(ngx.ERR, 'tg api request error: %s', err)
     exit(ngx.HTTP_INTERNAL_SERVER_ERROR, err)
   end
   if not res.ok then
-    log(res.description)
+    log(ngx.INFO, 'tg api response is not "ok": %s', res.description)
     exit(ngx.HTTP_NOT_FOUND, res.description)
   end
 
@@ -203,11 +203,11 @@ M.get_file = function(tiny_id, mode)
   end
   res, err = request_tg_server(http_obj, params)
   if not res then
-    log(err)
+    log(ngx.ERR, 'tg file storage request error: %s', err)
     exit(ngx.HTTP_INTERNAL_SERVER_ERROR, err)
   end
   if res.status ~= ngx.HTTP_OK then
-    log('file response status %s != 200', res.status)
+    log(ngx.ERR, 'tg file storage response status %s != 200', res.status)
     exit(ngx.HTTP_NOT_FOUND)
   end
 
@@ -254,7 +254,7 @@ M.get_file = function(tiny_id, mode)
     while true do
       chunk, err = res.body_reader(CHUNK_SIZE)
       if err then
-        log(ngx.ERR, err)
+        log(ngx.ERR, 'tg file storage read error: %s', err)
         break
       end
       if not chunk then break end
