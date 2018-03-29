@@ -77,6 +77,7 @@ local M = {}
 
 
 M.main = function()
+  ngx.header['Content-Type'] = 'text/html'
   template.render('web/main.html', {
     bot_username = config.tg.bot_username,
   })
@@ -163,7 +164,7 @@ M.webhook = function(secret)
 end
 
 
-M.get_file = function(tiny_id, mode)
+M.get_file = function(tiny_id, mode, file_name)
   -- decode tinyid
   local tiny_id_params, tiny_id_err = tinyid.decode(tiny_id)
   if not tiny_id_params then
@@ -224,10 +225,10 @@ M.get_file = function(tiny_id, mode)
       media_type = media_type,
     }
   end
-  local file_name = tiny_id .. (extension or '')
 
   if mode == GET_FILE_MODES.LINKS then
     -- /ln/ -> render links page
+    ngx.header['Content-Type'] = 'text/html'
     template.render('web/file-links.html', {
       title = tiny_id,
       file_size = file_size,
@@ -238,6 +239,9 @@ M.get_file = function(tiny_id, mode)
     })
   else
     -- /dl/ or /il/ -> stream file content from tg file storage
+    if not file_name or #file_name < 1 then
+      file_name = tiny_id .. (extension or '')
+    end
     local content_disposition
     if mode == GET_FILE_MODES.DOWNLOAD then
       content_disposition = 'attachment'
@@ -246,8 +250,8 @@ M.get_file = function(tiny_id, mode)
     end
 
     ngx.header['Content-Type'] = media_type
-    ngx.header['Content-Disposition'] = ('%s; filename="%s"'):format(
-      content_disposition, file_name)
+    ngx.header['Content-Disposition'] = ("%s; filename*=utf-8''%s"):format(
+      content_disposition, escape_uri(file_name, true))
     ngx.header['Content-Length'] = file_size
 
     local chunk

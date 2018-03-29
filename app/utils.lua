@@ -58,10 +58,6 @@ M.escape_uri = function(uri, escape_slashes)
   return uri:gsub('[^/]+', ngx.escape_uri)
 end
 
-M.get_basename = function(path)
-  return path:match('/([^/]*)$') or path
-end
-
 M.split_ext = function(path, exclude_dot)
   local root, ext = path:match('(.*[^/]+)%.([^./]+)$')
   root = root or path
