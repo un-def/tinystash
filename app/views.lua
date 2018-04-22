@@ -5,8 +5,8 @@ local json = require('cjson.safe')
 local tinyid = require('app.tinyid')
 local utils = require('app.utils')
 local constants = require('app.constants')
-
 local config = require('config.app')
+
 
 local log = utils.log
 local exit = utils.exit
@@ -21,7 +21,13 @@ local TG_API_HOST = constants.TG_API_HOST
 local TG_MAX_FILE_SIZE = constants.TG_MAX_FILE_SIZE
 local GET_FILE_MODES = constants.GET_FILE_MODES
 local CHUNK_SIZE = constants.CHUNK_SIZE
-local TIMEOUT = constants.TIMEOUT
+
+local tg_token = config.tg.token
+local tg_bot_username = config.tg.bot_username
+local tg_request_timeout = config.tg.request_timeout * 1000
+local tg_webhook_secret = config.tg.webhook_secret or tg_token
+local link_url_prefix = config.link_url_prefix
+local hide_image_download_link = config.hide_image_download_link
 
 
 local render_to_string = function(template_, context, plain)
@@ -29,7 +35,7 @@ local render_to_string = function(template_, context, plain)
 end
 
 local render_link_factory = function(tiny_id)
-  local link_template = ('%s/%%s/%s'):format(config.link_url_prefix, tiny_id)
+  local link_template = ('%s/%%s/%s'):format(link_url_prefix, tiny_id)
   return function(mode)
     return link_template:format(mode)
   end
@@ -55,7 +61,7 @@ end
 
 local request_tg_server = function(http_obj, params, decode_json)
   -- params table mutation!
-  params.path = params.path:format(config.tg.token)
+  params.path = params.path:format(tg_token)
   local res, err
   res, err = http_obj:connect(TG_API_HOST, 443)
   if not res then return nil, err end
@@ -79,13 +85,13 @@ local M = {}
 M.main = function()
   ngx.header['Content-Type'] = 'text/html'
   template.render('web/main.html', {
-    bot_username = config.tg.bot_username,
+    bot_username = tg_bot_username,
   })
 end
 
 
 M.webhook = function(secret)
-  if secret ~= (config.tg.webhook_secret or config.tg.token) then
+  if secret ~= tg_webhook_secret then
     exit(ngx.HTTP_NOT_FOUND)
   end
   ngx.req.read_body()
@@ -105,7 +111,7 @@ M.webhook = function(secret)
       send_webhook_response(message, 'bot/err-no-file.txt')
     end
     -- ignore groupchat commands to other bots / commands without bot username
-    if is_groupchat and bot_username ~= config.tg.bot_username then
+    if is_groupchat and bot_username ~= tg_bot_username then
       exit(ngx.HTTP_OK)
     end
     send_webhook_response(message, 'bot/ok-help.txt')
@@ -146,7 +152,7 @@ M.webhook = function(secret)
     file_obj_type = file_obj_type,
     media_type = media_type,
   }
-  local hide_download_link = (config.hide_image_download_link
+  local hide_download_link = (hide_image_download_link
                               and media_type
                               and media_type:sub(1, 6) == 'image/')
   log('file_obj_type: %s', file_obj_type)
@@ -173,7 +179,7 @@ M.get_file = function(tiny_id, mode, file_name)
   end
 
   local http_obj = http.new()
-  http_obj:set_timeout(TIMEOUT)
+  http_obj:set_timeout(tg_request_timeout)
   local res, err, params
 
   -- get file info

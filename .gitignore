@@ -1,7 +1,9 @@
 *_temp/
 logs/
 resty_modules/
+nginx.pid
 
-*.sh
 config/nginx.conf
 config/app.lua
+
+*.sh
