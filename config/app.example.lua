@@ -22,8 +22,12 @@ return {
     webhook_secret = nil,
   },
 
-  -- scheme://host[:port] without trailing slash
-  link_url_prefix = 'https://example.com',
+  -- url prefix for generated links: scheme://host[:port][/path], e.g.,
+  -- https://example.com/         -->   https://example.com/ln/<tiny_id>
+  -- https://example.com/tiny     -->   https://example.com/tiny/ln/<tiny_id>
+  -- https://example.com/stash/   -->   https://example.com/stash/ln/<tiny_id>
+  -- trailing slashes are ignored
+  link_url_prefix = 'https://example.com/',
   -- don't show download links in bot response if content-type is image/*
   hide_image_download_link = false,
 

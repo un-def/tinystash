@@ -26,7 +26,7 @@ local tg_token = config.tg.token
 local tg_bot_username = config.tg.bot_username
 local tg_request_timeout = config.tg.request_timeout * 1000
 local tg_webhook_secret = config.tg.webhook_secret or tg_token
-local link_url_prefix = config.link_url_prefix
+local link_url_prefix = config.link_url_prefix:match('(.-)/*$')
 local hide_image_download_link = config.hide_image_download_link
 
 
