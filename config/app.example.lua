@@ -16,7 +16,7 @@ return {
     token = 'bot_token',
     -- tg server request timeout, seconds
     request_timeout = 10,
-    -- secret part of the webhook url: https://www.example.com/<secret>
+    -- secret part of the webhook url: https://www.example.com/webhook/<secret>
     -- set to nil to use the authorization token as a secret
     -- see also: https://core.telegram.org/bots/api#setwebhook
     webhook_secret = nil,
