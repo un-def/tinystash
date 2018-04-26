@@ -74,7 +74,9 @@ end
 local api_call = function(method, params)
   local res, err
   local uri = ('https://api.telegram.org/bot%s/%s'):format(tg.token, method)
-  res, err = http.new():request_uri(uri, {
+  local httpc = http.new()
+  httpc:set_timeout(10000)
+  res, err = httpc:request_uri(uri, {
     query = params,
     ssl_verify = false,
   })
