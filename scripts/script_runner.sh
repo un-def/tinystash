@@ -1,4 +1,4 @@
-#/bin/sh
+#!/bin/sh
 
 # inspired by resty-cli -- https://github.com/openresty/resty-cli
 
