@@ -29,11 +29,41 @@ $ cp config/nginx.example.conf config/nginx.conf
 ```
 
 
+### Setting up Telegram bot webhook
+
+```shell
+$ scripts/webhook set
+```
+
+
 ### Running
 
 ```shell
-$ cd /path/to/tinystash
-$ /path/to/openresty/nginx/sbin/nginx -c config/nginx.conf -p .
+$ /usr/local/openresty/nginx/sbin/nginx -c config/nginx.conf -p .
+```
+
+
+### Quick deployment with Docker
+
+1. Prepare `config` directory with `nginx.conf` and `app.lua` configs.
+
+2. Run Docker container:
+```shell
+$ docker run -d \
+    --restart unless-stopped \
+    # Mount config directory from step 1
+    -v /path/to/config:/opt/tinystash/config \
+    # Optional: mount logs directory if you have configured log file(s) in nginx.conf
+    -v /var/log/tinystash:/opt/tinystash/logs \
+    # host:container port mapping
+    -p 80:80 \
+    --name tinystash \
+    un1def/tinystash
+```
+
+3. Set up Telegram bot webhook (Docker container must be started):
+```shell
+$ docker exec -it tinystash scripts/webhook set
 ```
 
 
