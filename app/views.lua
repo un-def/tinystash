@@ -79,7 +79,12 @@ local request_tg_server = function(http_obj, params, decode_json)
 end
 
 
-local M = {}
+local M = {
+  _VERSION = '1.0.0',
+  _DESCRIPTION = 'A storage-less/database-less filesharing via Telegram bot',
+  _URL = 'https://github.com/un-def/tinystash',
+  _LICENSE = 'MIT',
+}
 
 
 M.main = function()

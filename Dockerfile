@@ -18,3 +18,4 @@ ENTRYPOINT ["/usr/local/openresty/bin/openresty"]
 CMD ["-c", "config/nginx.conf", "-p", "."]
 
 LABEL maintainer="un.def <me@undef.im>"
+LABEL version="1.0.0"
