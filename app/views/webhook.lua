@@ -1,10 +1,10 @@
-local template = require('resty.template')
 local json = require('cjson.safe')
 
 local tinyid = require('app.tinyid')
 local utils = require('app.utils')
 local constants = require('app.constants')
-local render_link_factory = require('app.views.helpers').render_link_factory
+local helpers = require('app.views.helpers')
+
 local config = require('config.app')
 
 
@@ -23,10 +23,8 @@ local tg_bot_username = config.tg.bot_username
 local tg_webhook_secret = config.tg.webhook_secret or tg_token
 local hide_image_download_link = config.hide_image_download_link
 
-
-local render_to_string = function(template_, context, plain)
-  return template.compile(template_, nil, plain)(context)
-end
+local render_link_factory = helpers.render_link_factory
+local render_to_string = helpers.render_to_string
 
 
 local send_webhook_response = function(message, template_, context)
@@ -59,7 +57,7 @@ return {
     local req_json = json.decode(req_body)
     log('webhook request: %s', req_json and json.encode(req_json) or req_body)
     local message = req_json and req_json.message
-    if not message then
+    if not message or not message.chat then
       exit(ngx.HTTP_OK)
     end
 

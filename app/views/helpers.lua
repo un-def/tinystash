@@ -1,3 +1,5 @@
+local template = require('resty.template')
+
 local config = require('config.app')
 
 
@@ -11,6 +13,10 @@ _M.render_link_factory = function(tiny_id)
   return function(mode)
     return link_template:format(mode)
   end
+end
+
+_M.render_to_string = function(template_path, context, plain)
+  return template.compile(template_path, nil, plain)(context)
 end
 
 return _M
