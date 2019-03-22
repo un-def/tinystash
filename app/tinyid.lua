@@ -11,9 +11,9 @@ local encode_urlsafe_base64 = utils.encode_urlsafe_base64
 local get_substring = utils.get_substring
 
 
-local M = {}
+local _M = {}
 
-M.encode = function(params)
+_M.encode = function(params)
   local file_id_bytes, err = decode_urlsafe_base64(params.file_id)
   if not file_id_bytes then
     return nil, err
@@ -29,7 +29,7 @@ M.encode = function(params)
   return base58:encode(tiny_id_encr_bytes)
 end
 
-M.decode = function(tiny_id)
+_M.decode = function(tiny_id)
   -- decrypt tiny_id
   local tiny_id_encr_bytes, err = base58:decode(tiny_id)
   if not tiny_id_encr_bytes then
@@ -69,4 +69,4 @@ M.decode = function(tiny_id)
   }
 end
 
-return M
+return _M

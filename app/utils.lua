@@ -9,9 +9,9 @@ local ID_TYPE_MAP = mediatypes.ID_TYPE_MAP
 local TYPE_EXT_MAP = mediatypes.TYPE_EXT_MAP
 
 
-local M = {}
+local _M = {}
 
-M.log = function(...)
+_M.log = function(...)
   local level, message = ...
   local args_offset
   if type(level) ~= 'number' then
@@ -27,7 +27,7 @@ M.log = function(...)
   ngx.log(level, '\n\n*** ', message, '\n')
 end
 
-M.exit = function(status, content)
+_M.exit = function(status, content)
   if not content then ngx.exit(status) end
   ngx.status = status
   ngx.header['Content-Type'] = 'text/plain'
@@ -35,7 +35,7 @@ M.exit = function(status, content)
   ngx.exit(ngx.HTTP_OK)
 end
 
-M.encode_urlsafe_base64 = function(to_encode)
+_M.encode_urlsafe_base64 = function(to_encode)
   local encoded = ngx.encode_base64(to_encode, true)
   if not encoded then
     return nil, 'base64 encode error'
@@ -44,7 +44,7 @@ M.encode_urlsafe_base64 = function(to_encode)
   return encoded
 end
 
-M.decode_urlsafe_base64 = function(to_decode)
+_M.decode_urlsafe_base64 = function(to_decode)
   to_decode = to_decode:gsub('[-_]', {['-'] = '+', ['_'] = '/' })
   local decoded = ngx.decode_base64(to_decode)
   if not decoded then
@@ -53,12 +53,12 @@ M.decode_urlsafe_base64 = function(to_decode)
   return decoded
 end
 
-M.escape_uri = function(uri, escape_slashes)
+_M.escape_uri = function(uri, escape_slashes)
   if escape_slashes then return ngx.escape_uri(uri) end
   return uri:gsub('[^/]+', ngx.escape_uri)
 end
 
-M.split_ext = function(path, exclude_dot)
+_M.split_ext = function(path, exclude_dot)
   local root, ext = path:match('(.*[^/]+)%.([^./]+)$')
   root = root or path
   if ext and not exclude_dot then
@@ -67,7 +67,7 @@ M.split_ext = function(path, exclude_dot)
   return root, ext
 end
 
-M.get_substring = function(str, start, length, blank_to_nil)
+_M.get_substring = function(str, start, length, blank_to_nil)
   local stop, next
   if not length then
     stop = #str
@@ -80,7 +80,7 @@ M.get_substring = function(str, start, length, blank_to_nil)
   return substr, next
 end
 
-M.parse_media_type = function(media_type)
+_M.parse_media_type = function(media_type)
   local type_, subtype, suffix = media_type:match(
     '^([%w_-]+)/([.%w_-]+)%+?([%w_-]-)$')
   if not type_ then
@@ -97,12 +97,12 @@ M.parse_media_type = function(media_type)
   return {type_, subtype, suffix, x}
 end
 
-M.normalize_media_type = function(media_type)
+_M.normalize_media_type = function(media_type)
   local media_type_table
   if type(media_type) == 'table' then
     media_type_table = media_type
   else
-    media_type_table = M.parse_media_type(media_type)
+    media_type_table = _M.parse_media_type(media_type)
     if not media_type_table then return media_type end
   end
   local type_, subtype, suffix = unpack(media_type_table)
@@ -126,7 +126,7 @@ local _get_media_type_id = function(media_type)
   return media_type_id, media_type
 end
 
-M.guess_media_type = function(file_obj, file_obj_type)
+_M.guess_media_type = function(file_obj, file_obj_type)
   local media_type, media_type_id
   media_type = file_obj.mime_type and file_obj.mime_type:lower()
   -- guess by tg object 'mime_type' property
@@ -137,9 +137,9 @@ M.guess_media_type = function(file_obj, file_obj_type)
       return media_type_id, media_type
     end
     -- try normalized 'mime_type'
-    local media_type_table = M.parse_media_type(media_type)
+    local media_type_table = _M.parse_media_type(media_type)
     if media_type_table then
-      media_type = M.normalize_media_type(media_type_table)
+      media_type = _M.normalize_media_type(media_type_table)
       media_type_id, media_type = _get_media_type_id(media_type)
       if media_type_id then
         return media_type_id, media_type
@@ -159,7 +159,7 @@ M.guess_media_type = function(file_obj, file_obj_type)
   return DEFAULT_TYPE_ID, nil
 end
 
-M.guess_extension = function(params)
+_M.guess_extension = function(params)
   -- required params: file_obj AND file_obj_type OR file_name
   -- optional params: media_type, exclude_dot
   local ext, file_name, _
@@ -169,7 +169,7 @@ M.guess_extension = function(params)
     file_name = params.file_name
   end
   if file_name then
-    _, ext = M.split_ext(file_name, true)
+    _, ext = _M.split_ext(file_name, true)
   end
   if not ext and params.file_obj_type then
     ext = TG_TYPES_EXTENSIONS_MAP[params.file_obj_type]
@@ -183,4 +183,4 @@ M.guess_extension = function(params)
   return ext
 end
 
-return M
+return _M
