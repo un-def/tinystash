@@ -27,18 +27,18 @@ local render_link_factory = helpers.render_link_factory
 local render_to_string = helpers.render_to_string
 
 
-local send_webhook_response = function(message, template_, context)
+local send_webhook_response = function(message, template_path, context)
   local chat = message.chat
   -- context table mutation!
   if chat.type ~= TG_CHAT_PRIVATE then
     context = context or {}
     context.user = message.from
   end
-  ngx.header['Content-Type'] = 'application/json'
+  ngx.header['content-type'] = 'application/json'
   ngx.print(json.encode{
     method = 'sendMessage',
     chat_id = chat.id,
-    text = render_to_string(template_, context),
+    text = render_to_string(template_path, context),
     parse_mode = 'markdown',
     disable_web_page_preview = true,
   })
@@ -48,10 +48,13 @@ end
 
 return {
 
-  POST = function(secret)
+  initial = function(secret)
     if secret ~= tg_webhook_secret then
       exit(ngx.HTTP_NOT_FOUND)
     end
+  end,
+
+  POST = function()
     ngx.req.read_body()
     local req_body = ngx.req.get_body_data()
     local req_json = json.decode(req_body)

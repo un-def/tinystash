@@ -1,47 +1,25 @@
-local http = require('resty.http')
 local template = require('resty.template')
-local json = require('cjson.safe')
 
 local tinyid = require('app.tinyid')
 local utils = require('app.utils')
 local constants = require('app.constants')
+local tg = require('app.tg')
 local render_link_factory = require('app.views.helpers').render_link_factory
-local config = require('config.app')
 
 
 local log = utils.log
 local exit = utils.exit
 local escape_uri = utils.escape_uri
 local guess_extension = utils.guess_extension
+local parse_media_type = utils.parse_media_type
+
+local prepare_connection = tg.prepare_connection
+local request_tg_server = tg.request_tg_server
 
 local TG_TYPES = constants.TG_TYPES
 local TG_TYPES_EXTENSIONS_MAP = constants.TG_TYPES_EXTENSIONS_MAP
-local TG_API_HOST = constants.TG_API_HOST
 local GET_FILE_MODES = constants.GET_FILE_MODES
 local CHUNK_SIZE = constants.CHUNK_SIZE
-
-local tg_token = config.tg.token
-local tg_request_timeout = config.tg.request_timeout * 1000
-
-
-local request_tg_server = function(http_obj, params, decode_json)
-  -- params table mutation!
-  params.path = params.path:format(tg_token)
-  local res, err
-  res, err = http_obj:connect(TG_API_HOST, 443)
-  if not res then return nil, err end
-  res, err = http_obj:ssl_handshake(nil, TG_API_HOST, true)
-  if not res then return nil, err end
-  res, err = http_obj:request(params)
-  if not res then return nil, err end
-  -- don't forget to call :close or :set_keepalive
-  if not decode_json then return res end
-  local body
-  body, err = res:read_body()
-  http_obj:set_keepalive()
-  if not body then return nil, err end
-  return json.decode(body)
-end
 
 
 return {
@@ -54,16 +32,19 @@ return {
       exit(ngx.HTTP_NOT_FOUND)
     end
 
-    local http_obj = http.new()
-    http_obj:set_timeout(tg_request_timeout)
-    local res, err, params
+    local conn, res, err, params
+    conn, err = prepare_connection()
+    if not conn then
+      log(ngx.ERR, 'tg api request error: %s', err)
+      exit(ngx.HTTP_INTERNAL_SERVER_ERROR, err)
+    end
 
     -- get file info
     params = {
       path = '/bot%s/getFile',
       query = 'file_id=' .. tiny_id_params.file_id,
     }
-    res, err = request_tg_server(http_obj, params, true)
+    res, err = request_tg_server(conn, params, true)
     if not res then
       log(ngx.ERR, 'tg api request error: %s', err)
       exit(ngx.HTTP_INTERNAL_SERVER_ERROR, err)
@@ -84,7 +65,7 @@ return {
     else
       params.method = 'GET'
     end
-    res, err = request_tg_server(http_obj, params)
+    res, err = request_tg_server(conn, params)
     if not res then
       log(ngx.ERR, 'tg file storage request error: %s', err)
       exit(ngx.HTTP_INTERNAL_SERVER_ERROR, err)
@@ -110,7 +91,6 @@ return {
 
     if mode == GET_FILE_MODES.LINKS then
       -- /ln/ -> render links page
-      ngx.header['Content-Type'] = 'text/html'
       template.render('web/file-links.html', {
         title = tiny_id,
         file_size = file_size,
@@ -131,10 +111,14 @@ return {
         content_disposition = 'inline'
       end
 
-      ngx.header['Content-Type'] = media_type
-      ngx.header['Content-Disposition'] = ("%s; filename*=utf-8''%s"):format(
+      local content_type = media_type
+      if parse_media_type(media_type)[1] == 'text' then
+        content_type = content_type .. '; charset=utf-8'
+      end
+      ngx.header['content-type'] = content_type
+      ngx.header['content-disposition'] = ("%s; filename*=utf-8''%s"):format(
         content_disposition, escape_uri(file_name, true))
-      ngx.header['Content-Length'] = file_size
+      ngx.header['content-length'] = file_size
 
       local chunk
       while true do
@@ -150,7 +134,7 @@ return {
     end
 
     -- put connection to connection pool
-    http_obj:set_keepalive()
+    conn:set_keepalive()
 
   end
 

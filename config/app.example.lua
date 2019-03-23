@@ -20,6 +20,9 @@ return {
     -- set to nil to use the authorization token as a secret
     -- see also: https://core.telegram.org/bots/api#setwebhook
     webhook_secret = nil,
+    -- chat_id (integer or string) for uploaded files
+    -- set to nil to disable http uploading
+    upload_chat_id = nil,
   },
 
   -- url prefix for generated links: scheme://host[:port][/path], e.g.,

@@ -27,11 +27,11 @@ _M.log = function(...)
   ngx.log(level, '\n\n*** ', message, '\n')
 end
 
-_M.exit = function(status, content)
-  if not content then ngx.exit(status) end
+_M.exit = function(status, ...)
+  if select('#', ...) == 0 then ngx.exit(status) end
   ngx.status = status
-  ngx.header['Content-Type'] = 'text/plain'
-  ngx.print(content)
+  ngx.header['content-type'] = 'text/plain'
+  ngx.print(...)
   ngx.exit(ngx.HTTP_OK)
 end
 
@@ -97,6 +97,14 @@ _M.parse_media_type = function(media_type)
   return {type_, subtype, suffix, x}
 end
 
+_M.get_media_type_id = function(media_type)
+  local media_type_id = TYPE_ID_MAP[media_type]
+  if media_type_id then
+    media_type = ID_TYPE_MAP[media_type_id]
+  end
+  return media_type_id, media_type
+end
+
 _M.normalize_media_type = function(media_type)
   local media_type_table
   if type(media_type) == 'table' then
@@ -118,21 +126,13 @@ _M.normalize_media_type = function(media_type)
   return ('%s/%s%s'):format(type_, subtype, suffix and '+' .. suffix or '')
 end
 
-local _get_media_type_id = function(media_type)
-  local media_type_id = TYPE_ID_MAP[media_type]
-  if media_type_id then
-    media_type = ID_TYPE_MAP[media_type_id]
-  end
-  return media_type_id, media_type
-end
-
 _M.guess_media_type = function(file_obj, file_obj_type)
   local media_type, media_type_id
   media_type = file_obj.mime_type and file_obj.mime_type:lower()
   -- guess by tg object 'mime_type' property
   if media_type then
     -- try unprocessed 'mime_type'
-    media_type_id, media_type = _get_media_type_id(media_type)
+    media_type_id, media_type = _M.get_media_type_id(media_type)
     if media_type_id then
       return media_type_id, media_type
     end
@@ -140,13 +140,13 @@ _M.guess_media_type = function(file_obj, file_obj_type)
     local media_type_table = _M.parse_media_type(media_type)
     if media_type_table then
       media_type = _M.normalize_media_type(media_type_table)
-      media_type_id, media_type = _get_media_type_id(media_type)
+      media_type_id, media_type = _M.get_media_type_id(media_type)
       if media_type_id then
         return media_type_id, media_type
       end
       -- fallback unknown 'text/{subtype}' to 'text/plain'
       if media_type_table[1] == 'text' then
-        return _get_media_type_id('text/plain')
+        return _M.get_media_type_id('text/plain')
       end
     end
     return DEFAULT_TYPE_ID, nil
@@ -154,13 +154,16 @@ _M.guess_media_type = function(file_obj, file_obj_type)
   -- guess by tg object type
   media_type = TG_TYPES_MEDIA_TYPES_MAP[file_obj_type]
   if media_type then
-    return _get_media_type_id(media_type)
+    return _M.get_media_type_id(media_type)
   end
   return DEFAULT_TYPE_ID, nil
 end
 
 _M.guess_extension = function(params)
-  -- required params: file_obj AND file_obj_type OR file_name
+  -- params combinations:
+  --   * file_obj AND file_obj_type
+  --   * file_name
+  --   * nothing
   -- optional params: media_type, exclude_dot
   local ext, file_name, _
   if params.file_obj then

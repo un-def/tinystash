@@ -1,0 +1,9 @@
+{% layout = 'web/layout.html' %}
+<form method="post" enctype="multipart/form-data">
+  {% if upload_type == 'file' then %}
+    <input type="file" name="file">
+  {% elseif upload_type == 'text' then %}
+    <textarea cols="100" rows="30" name="file"></textarea>
+  {% end %}
+  <button role="submit">OK</button>
+</form>
