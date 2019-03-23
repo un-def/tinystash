@@ -30,6 +30,7 @@ docker-run tag='latest' port='8880' +args='':
     -d --restart unless-stopped \
     --log-driver journald \
     -p {{port}}:80 \
+    {{ args }} \
     --name {{project}} {{project}}:{{tag}}
 
 docker-start:
