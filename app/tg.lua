@@ -5,6 +5,7 @@ local constants = require('app.constants')
 local config = require('config.app')
 
 local TG_API_HOST = constants.TG_API_HOST
+local TG_TYPES = constants.TG_TYPES
 local tg_token = config.tg.token
 local tg_request_timeout = config.tg.request_timeout * 1000
 
@@ -37,6 +38,30 @@ _M.request_tg_server = function(conn, params, decode_json)
   conn:set_keepalive()
   if not body then return nil, err end
   return json.decode(body)
+end
+
+_M.get_file_from_message = function(message)
+  -- message: TG bot API Message object
+  -- returns:
+  --   if ok: table with keys 'object' and 'type'
+  --          where 'object' is one of TG bot API objects (Document/Video/...)
+  --          and 'type' is one of TG_TYPES constants
+  --   if no file found: nil, err
+  local file_obj, file_obj_type
+  for _, _file_obj_type in pairs(TG_TYPES) do
+    file_obj = message[_file_obj_type]
+    if file_obj then
+      file_obj_type = _file_obj_type
+      if file_obj_type == TG_TYPES.PHOTO then
+        file_obj = file_obj[#file_obj]
+      end
+      return {
+        object = file_obj,
+        type = file_obj_type,
+      }
+    end
+  end
+  return nil, 'no file in the message'
 end
 
 return _M

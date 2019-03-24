@@ -4,6 +4,7 @@ local tinyid = require('app.tinyid')
 local utils = require('app.utils')
 local constants = require('app.constants')
 local helpers = require('app.views.helpers')
+local get_file_from_message = require('app.tg').get_file_from_message
 
 local config = require('config.app')
 
@@ -13,7 +14,6 @@ local exit = utils.exit
 local guess_media_type = utils.guess_media_type
 local guess_extension = utils.guess_extension
 
-local TG_TYPES = constants.TG_TYPES
 local TG_CHAT_PRIVATE = constants.TG_CHAT_PRIVATE
 local TG_MAX_FILE_SIZE = constants.TG_MAX_FILE_SIZE
 local GET_FILE_MODES = constants.GET_FILE_MODES
@@ -83,19 +83,17 @@ return {
       exit(ngx.HTTP_OK)
     end
 
-    local file_obj, file_obj_type
-    for _, _file_obj_type in pairs(TG_TYPES) do
-      file_obj = message[_file_obj_type]
-      if file_obj then
-        file_obj_type = _file_obj_type
-        if file_obj_type == TG_TYPES.PHOTO then
-          file_obj = file_obj[#file_obj]
-        end
-        break
-      end
+    local file, err = get_file_from_message(message)
+    if not file then
+      log(err)
+      send_webhook_response(message, 'bot/err-no-file.txt')
     end
 
-    if not file_obj or not file_obj.file_id then
+    local file_obj = file.object
+    local file_obj_type = file.type
+
+    if not file_obj.file_id then
+      log('no file_id')
       send_webhook_response(message, 'bot/err-no-file.txt')
     end
 
