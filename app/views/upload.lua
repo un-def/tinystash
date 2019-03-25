@@ -1,7 +1,5 @@
 local upload = require('resty.upload')
 local template = require('resty.template')
-local random_bytes = require('resty.random').bytes
-local to_hex = require('resty.string').to_hex
 
 local tinyid = require('app.tinyid')
 local tg = require('app.tg')
@@ -14,6 +12,7 @@ local yield = coroutine.yield
 
 local log = utils.log
 local exit = utils.exit
+local generate_random_hex_string = utils.generate_random_hex_string
 local parse_media_type = utils.parse_media_type
 local normalize_media_type = utils.normalize_media_type
 local get_media_type_id = utils.get_media_type_id
@@ -35,18 +34,18 @@ local format_error = function(preamble, error)
 end
 
 
-local check_is_file_part = function(content_disposition)
-  if content_disposition:find('[ ;]name="file"') then
-    return true
-  end
-  return false
-end
-
-
 local yield_chunk = function(bytes)
   -- yield chunked transfer encoding chunk
   if bytes == nil then bytes = '' end
   yield(('%X\r\n%s\r\n'):format(#bytes, bytes))
+end
+
+
+local FIELD_NAME_FILE = 'file'
+local FIELD_NAME_CSRFTOKEN = 'csrftoken'
+
+local get_form_field_name = function(content_disposition)
+  return content_disposition:match('[ ;]name="([^"]+)"')
 end
 
 
@@ -59,12 +58,17 @@ local prepare_uploader = function(upload_type, chat_id)
     return nil, err
   end
   form:set_timeout(1000) -- 1 sec
+  local expected_form_fields = {
+    [FIELD_NAME_FILE] = true,
+    [FIELD_NAME_CSRFTOKEN] = true,
+  }
   return setmetatable({
     upload_type = upload_type,
     chat_id = chat_id,
+    expected_form_fields = expected_form_fields,
     form = form,
     -- bytes_uploaded = nil | number (set by upload_body_coro)
-    -- media_type = nil | string (set by maybe_upload_part)
+    -- media_type = nil | string (set by run)
   }, uploader_meta)
 end
 
@@ -78,68 +82,77 @@ uploader_meta.run = function(self)
   -- returns:
   --   if ok: TG API object (Document/Video/...) table with mandatory 'file_id' field
   --   if error: nil, error_code, error_text?
-  local res, err_code, err
+  -- sets:
+  --  self.media_type: string
+  local file_object
+  local res, err
   while true do
-    res, err_code, err = self:maybe_upload_part()
+    res, err = self:handle_form_field()
     if not res then
-      return nil, err_code, err
+      log(err)
+      return nil, ngx.HTTP_BAD_REQUEST, err
     elseif res == ngx.null then
-      log('no file in this form part')
+      log('end of form')
+      break
     else
-      return res
+      local field_name, media_type, initial_data = unpack(res)
+      if not self.expected_form_fields[field_name] then
+        return nil, ngx.HTTP_BAD_REQUEST, format_error('unexpected form field', field_name)
+      end
+      if field_name == FIELD_NAME_FILE then
+        if initial_data:len() == 0 then
+          return nil, ngx.HTTP_BAD_REQUEST, 'empty file'
+        end
+        if self.upload_type == 'text' then
+          media_type = 'text/plain'
+        elseif not media_type then
+          media_type = 'application/octet-stream'
+        else
+          media_type = normalize_media_type(media_type)
+        end
+        self.media_type = media_type
+        log('media type: %s', media_type)
+        file_object, err = self:upload(initial_data)
+        if not file_object then
+          return nil, ngx.HTTP_INTERNAL_SERVER_ERROR, err
+        end
+      end
     end
   end
+  if not file_object then
+    return nil, ngx.HTTP_BAD_REQUEST, 'no file'
+  end
+  return file_object
 end
 
-uploader_meta.maybe_upload_part = function(self)
+uploader_meta.handle_form_field = function(self)
   -- returns:
-  --   if part has no file: ngx.null
-  --   if file has been uploaded: TG API object (Document/Video/...) table
-  --      with mandatory 'file_id' field
-  --   if error (any): nil, error_code, error_text?
-  -- sets:
-  --   self.media_type: string
+  --  if eof: ngx.null
+  --  if body (any): first chunk of body ("initial_data")
+  --  if error (any): nil, error_code, error_text?
   local form = self.form
-  local media_type
-  if self.upload_type == 'text' then
-    media_type = 'text/plain'
-  end
-  -- true if we found a file
-  local is_file_part = false
-  local file_object, err
-  local token, data
+  local field_name, media_type
+  local token, data, err
   while true do
     token, data, err = form:read()
+    -- 'part_end' tokens are ignored
     if not token then
-      return nil, ngx.HTTP_BAD_REQUEST, err
+      return nil, err
+    elseif token == 'eof' then
+      return ngx.null
     elseif token == 'header' then
       if type(data) ~= 'table' then
-        return nil, ngx.HTTP_BAD_REQUEST, 'invalid header'
+        return nil, 'invalid form-data part header'
       end
       local header = data[1]:lower()
       local value = data[2]
-      if header == 'content-type' and not media_type then
+      if header == 'content-type' then
         media_type = value
       elseif header == 'content-disposition' then
-        is_file_part = check_is_file_part(value)
+        field_name = get_form_field_name(value)
       end
-    elseif token == 'body' and is_file_part then
-      if not media_type then
-        media_type = 'application/octet-stream'
-      else
-        media_type = normalize_media_type(media_type)
-      end
-      self.media_type = media_type
-      log('media type: %s', media_type)
-      file_object, err = self:upload(data)
-      if not file_object then
-        return nil, ngx.HTTP_INTERNAL_SERVER_ERROR, err
-      end
-      return file_object
-    elseif token == 'part_end' then
-      return ngx.null
-    elseif token == 'eof' then
-      return nil, ngx.HTTP_BAD_REQUEST, 'no file'
+    elseif token == 'body' and field_name then
+      return {field_name, media_type, data}
     end
   end
 end
@@ -151,7 +164,7 @@ uploader_meta.upload = function(self, initial)
   --  if error: nil, err
   -- sets:
   --  self.boundary: string
-  local boundary = 'BNDR-' .. to_hex(random_bytes(32))
+  local boundary = 'BNDR-' .. generate_random_hex_string(32)
   self.boundary = boundary
   local conn, res, err
   conn, err = prepare_connection()
@@ -207,7 +220,7 @@ uploader_meta.upload_body_coro = function(self, initial)
   local boundary = self.boundary
   local sep = ('--%s\r\n'):format(boundary)
   local ext = guess_extension{media_type = media_type, exclude_dot = true} or 'bin'
-  local filename = ('%s.%s'):format(to_hex(random_bytes(16)), ext)
+  local filename = ('%s.%s'):format(generate_random_hex_string(16), ext)
   yield_chunk(sep)
   yield_chunk('content-disposition: form-data; name="chat_id"\r\n\r\n')
   yield_chunk(('%s\r\n'):format(self.chat_id))

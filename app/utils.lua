@@ -1,3 +1,6 @@
+local random_bytes = require('resty.random').bytes
+local to_hex = require('resty.string').to_hex
+
 local constants = require('app.constants')
 local mediatypes = require('app.mediatypes')
 
@@ -33,6 +36,10 @@ _M.exit = function(status, ...)
   ngx.header['content-type'] = 'text/plain'
   ngx.print(...)
   ngx.exit(ngx.HTTP_OK)
+end
+
+_M.generate_random_hex_string = function(size)
+  return to_hex(random_bytes(size))
 end
 
 _M.encode_urlsafe_base64 = function(to_encode)
