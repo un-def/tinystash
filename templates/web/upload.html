@@ -1,9 +1,10 @@
 {% layout = 'web/layout.html' %}
 <form method="post" enctype="multipart/form-data">
   {% if upload_type == 'file' then %}
-    <input type="file" name="file">
+  <input type="file" name="file">
   {% elseif upload_type == 'text' then %}
-    <textarea cols="100" rows="30" name="file"></textarea>
+  <textarea cols="100" rows="30" name="file"></textarea>
   {% end %}
+  <input type="hidden" name="{{ csrftoken_name }}" value="{{ csrftoken_value }}">
   <button role="submit">OK</button>
 </form>

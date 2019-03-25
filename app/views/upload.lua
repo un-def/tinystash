@@ -52,20 +52,16 @@ end
 local uploader_meta = {}
 uploader_meta.__index = uploader_meta
 
-local prepare_uploader = function(upload_type, chat_id)
+local prepare_uploader = function(upload_type, chat_id, csrftoken)
   local form, err = upload:new(CHUNK_SIZE)
   if not form then
     return nil, err
   end
   form:set_timeout(1000) -- 1 sec
-  local expected_form_fields = {
-    [FIELD_NAME_FILE] = true,
-    [FIELD_NAME_CSRFTOKEN] = true,
-  }
   return setmetatable({
     upload_type = upload_type,
     chat_id = chat_id,
-    expected_form_fields = expected_form_fields,
+    csrftoken = csrftoken,
     form = form,
     -- bytes_uploaded = nil | number (set by upload_body_coro)
     -- media_type = nil | string (set by run)
@@ -84,7 +80,7 @@ uploader_meta.run = function(self)
   --   if error: nil, error_code, error_text?
   -- sets:
   --  self.media_type: string
-  local file_object
+  local file_object, csrftoken
   local res, err
   while true do
     res, err = self:handle_form_field()
@@ -96,10 +92,12 @@ uploader_meta.run = function(self)
       break
     else
       local field_name, media_type, initial_data = unpack(res)
-      if not self.expected_form_fields[field_name] then
-        return nil, ngx.HTTP_BAD_REQUEST, format_error('unexpected form field', field_name)
-      end
-      if field_name == FIELD_NAME_FILE then
+      if field_name == FIELD_NAME_CSRFTOKEN then
+        csrftoken = initial_data
+        if csrftoken ~= self.csrftoken then
+          return nil, ngx.HTTP_FORBIDDEN, 'invalid csrf token'
+        end
+      elseif field_name == FIELD_NAME_FILE then
         if initial_data:len() == 0 then
           return nil, ngx.HTTP_BAD_REQUEST, 'empty file'
         end
@@ -116,10 +114,16 @@ uploader_meta.run = function(self)
         if not file_object then
           return nil, ngx.HTTP_INTERNAL_SERVER_ERROR, err
         end
+      else
+        return nil, ngx.HTTP_BAD_REQUEST, format_error('unexpected form field', field_name)
       end
     end
   end
-  if not file_object then
+  if not csrftoken then
+    return nil, ngx.HTTP_FORBIDDEN, 'no csrf token'
+  elseif csrftoken ~= self.csrftoken then
+    return nil, ngx.HTTP_FORBIDDEN, 'invalid csrf token'
+  elseif not file_object then
     return nil, ngx.HTTP_BAD_REQUEST, 'no file'
   end
   return file_object
@@ -269,14 +273,35 @@ return {
   end,
 
   GET = function(upload_type)
+    local csrftoken = generate_random_hex_string(16)
+    ngx.header['set-cookie'] = (
+      '%s=%s; Path=/; HttpOnly; SameSite=Strict'):format(FIELD_NAME_CSRFTOKEN, csrftoken)
     template.render('web/upload.html', {
       upload_type = upload_type,
+      csrftoken_name = FIELD_NAME_CSRFTOKEN,
+      csrftoken_value = csrftoken,
     })
   end,
 
   POST = function(upload_type)
     ngx.header['content-type'] = 'text/plain'
-    local uploader, err = prepare_uploader(upload_type, tg_upload_chat_id)
+
+    local cookie = ngx.var.http_cookie
+    if not cookie then
+      exit(ngx.HTTP_FORBIDDEN)
+    end
+    local csrftoken
+    for key, value in cookie:gmatch('([^%c%s;]+)=([^%c%s;]+)') do
+      if key == FIELD_NAME_CSRFTOKEN then
+        csrftoken = value
+        break
+      end
+    end
+    if not csrftoken then
+      exit(ngx.HTTP_FORBIDDEN)
+    end
+
+    local uploader, err = prepare_uploader(upload_type, tg_upload_chat_id, csrftoken)
     if not uploader then
       log('failed to init uploader: %s', err)
       exit(ngx.HTTP_BAD_REQUEST)
@@ -284,6 +309,7 @@ return {
     local file_object, err_code
     file_object, err_code, err = uploader:run()
     uploader:close()
+
     if not file_object then
       exit(err_code, err)
     end
@@ -299,6 +325,7 @@ return {
       log('file is too big for getFile API method, return error to client')
       exit(413)
     end
+
     local media_type = uploader.media_type
     local media_type_id = get_media_type_id(media_type)
     if not media_type_id then
@@ -307,6 +334,7 @@ return {
         media_type_id = get_media_type_id('text/plain')
       end
     end
+
     local tiny_id
     tiny_id, err = tinyid.encode{
       file_id = file_object.file_id,
