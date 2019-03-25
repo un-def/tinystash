@@ -59,6 +59,9 @@ local view_meta = {
 
 
 local view = function(handlers)
+  if type(handlers) == 'string' then
+    handlers = require(handlers)
+  end
   local view_table = {}
   for method, handler in pairs(handlers) do
     local handler_type = type(handler)
@@ -71,25 +74,17 @@ local view = function(handlers)
       elseif handler_type == 'string' then
         handler = template_handler({handler})
       end
-      view_table[method:upper()] = handler
+      view_table[method] = handler
     end
   end
   return setmetatable(view_table, view_meta)
 end
 
 
-local viewset = function(views)
-  local viewset_table = {}
-  for name, view_ in pairs(views) do
-    viewset_table[name] = view(view_)
-  end
-  return viewset_table
-end
-
-
-return viewset{
-  main = require('app.views.main'),
-  getfile = require('app.views.getfile'),
-  webhook = require('app.views.webhook'),
-  upload = require('app.views.upload'),
+return {
+  main = view('app.views.main'),
+  getfile = view('app.views.getfile'),
+  webhook = view('app.views.webhook'),
+  upload = view('app.views.upload'),
+  error = require('app.views.error').error_handler,
 }

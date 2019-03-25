@@ -265,8 +265,8 @@ return {
     ngx.header['content-type'] = 'text/plain'
     local uploader, err = prepare_uploader(upload_type, tg_upload_chat_id)
     if not uploader then
-      log(ngx.ERR, 'failed to init uploader: %s', err)
-      exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
+      log('failed to init uploader: %s', err)
+      exit(ngx.HTTP_BAD_REQUEST)
     end
     local file_object, err_code
     file_object, err_code, err = uploader:run()
