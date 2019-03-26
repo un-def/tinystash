@@ -1,8 +1,13 @@
 local random_bytes = require('resty.random').bytes
 local to_hex = require('resty.string').to_hex
+local raw_log = require('ngx.errlog').raw_log
 
 local constants = require('app.constants')
 local mediatypes = require('app.mediatypes')
+
+
+local ngx_DEBUG = ngx.DEBUG
+local debug_getinfo = debug.getinfo
 
 local TG_TYPES_MEDIA_TYPES_MAP = constants.TG_TYPES_MEDIA_TYPES_MAP
 local TG_TYPES_EXTENSIONS_MAP = constants.TG_TYPES_EXTENSIONS_MAP
@@ -12,6 +17,19 @@ local ID_TYPE_MAP = mediatypes.ID_TYPE_MAP
 local TYPE_EXT_MAP = mediatypes.TYPE_EXT_MAP
 
 
+local LOG_LEVEL_NAMES = {
+  [ngx.STDERR] = 'STDERR',
+  [ngx.EMERG] = 'EMERG',
+  [ngx.ALERT] = 'ALERT',
+  [ngx.CRIT] = 'CRIT',
+  [ngx.ERR] = 'ERR',
+  [ngx.WARN] = 'WARN',
+  [ngx.NOTICE] = 'NOTICE',
+  [ngx.INFO] = 'INFO',
+  [ngx_DEBUG] = 'DEBUG',
+}
+
+
 local _M = {}
 
 _M.log = function(...)
@@ -19,7 +37,7 @@ _M.log = function(...)
   local args_offset
   if type(level) ~= 'number' then
     message = level
-    level = ngx.DEBUG
+    level = ngx_DEBUG
     args_offset = 2
   else
     args_offset = 3
@@ -27,7 +45,11 @@ _M.log = function(...)
   if select('#', ...) - args_offset > -1 then
     message = tostring(message):format(select(args_offset, ...))
   end
-  ngx.log(level, '\n\n*** ', message, '\n')
+  local info = debug_getinfo(2, 'Sln')
+  message = ('%s:%s: %s():\n\n*** [%s] %s\n'):format(
+    info.short_src:match('//(app/.+)'), info.currentline,
+    info.name, LOG_LEVEL_NAMES[level], message)
+  raw_log(level, message)
 end
 
 _M.exit = function(status, ...)
