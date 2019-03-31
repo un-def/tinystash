@@ -4,8 +4,9 @@ RUN apk add --no-cache curl perl
 COPY requirements.opm /tmp/requirements.opm
 RUN while read PNAME; do opm --cwd get $PNAME; done < /tmp/requirements.opm
 COPY app/ app/
-COPY templates/ templates/
 COPY scripts/ scripts/
+COPY static/ static/
+COPY templates/ templates/
 
 FROM openresty/openresty:alpine
 WORKDIR /opt/tinystash/
