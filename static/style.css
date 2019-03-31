@@ -163,6 +163,13 @@ footer {
   text-overflow: ellipsis;
 }
 
+.file-links-page .row input[type="text"] {
+  /* workaround for weird (bolder) form input text rendering in chrome */
+  font-size: .95em;
+  font-family: inherit;
+  border: 0;
+}
+
 .file-links-page .row > :first-child {
   background: #f0f0f0;
   flex: 1 1 20%;

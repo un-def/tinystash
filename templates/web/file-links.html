@@ -28,24 +28,24 @@
   {% end %}
   <div class="row{% if extension then %} ext-off{% end %}">
     <a href="{* dl_link *}">download</a>
-    <span>{{ dl_link }}</span>
+    <input type="text" value="{{ dl_link }}" readonly>
   </div>
   <div class="row{% if extension then %} ext-off{% end %}">
     <a href="{* il_link *}">inline</a>
-    <span>{{ il_link }}</span>
+    <input type="text" value="{{ il_link }}" readonly>
   </div>
   {% if extension then %}
     <div class="row ext-on">
       <a href="{* dl_link *}{{ extension }}">download</a>
-      <span>{{ dl_link }}{{ extension }}</span>
+      <input type="text" value="{{ dl_link }}{{ extension }}" readonly>
     </div>
     <div class="row ext-on">
       <a href="{* il_link *}{{ extension }}">inline</a>
-      <span>{{ il_link }}{{ extension }}</span>
+      <input type="text" value="{{ il_link }}{{ extension }}" readonly>
     </div>
   {% end %}
   <div class="row">
     <a href="{* ln_link *}">links page</a>
-    <span>{{ ln_link }}</span>
+    <input type="text" value="{{ ln_link }}" readonly>
   </div>
 </div>
