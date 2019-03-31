@@ -1,10 +1,8 @@
-local template = require('resty.template')
-
 local tinyid = require('app.tinyid')
 local utils = require('app.utils')
 local constants = require('app.constants')
 local tg = require('app.tg')
-local render_link_factory = require('app.views.helpers').render_link_factory
+local helpers = require('app.views.helpers')
 
 
 local log = utils.log
@@ -15,6 +13,9 @@ local parse_media_type = utils.parse_media_type
 
 local prepare_connection = tg.prepare_connection
 local request_tg_server = tg.request_tg_server
+
+local render_link_factory = helpers.render_link_factory
+local render = helpers.render
 
 local TG_TYPES = constants.TG_TYPES
 local TG_TYPES_EXTENSIONS_MAP = constants.TG_TYPES_EXTENSIONS_MAP
@@ -91,7 +92,7 @@ return {
 
     if mode == GET_FILE_MODES.LINKS then
       -- /ln/ -> render links page
-      template.render('web/file-links.html', {
+      render('web/file-links.html', {
         title = tiny_id,
         file_size = file_size,
         media_type = media_type,

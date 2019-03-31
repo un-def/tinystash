@@ -1,2 +1,4 @@
-{% layout = 'web/layout.html' %}
-{{ status_code }}{% if reason then %} {{ reason }}{% end %}
+{% local layout = 'web/layout.html' %}
+<div class="error-page">
+  {{ status_code }}{% if reason then %} {{ reason }}{% end %}
+</div>

@@ -1,0 +1,253 @@
+/* common */
+
+@font-face {
+  font-family: 'Source Sans Pro';
+  font-style: normal;
+  font-weight: 400;
+  src: local('Source Sans Pro Regular'), local('SourceSansPro-Regular'), url('font.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+* {
+  padding: 0;
+  margin: 0;
+}
+
+body {
+  background-color: #fff;
+  font-family: 'Source Sans Pro', sans-serif;
+  color: #333;
+}
+
+a {
+  color: #337ab7;
+  text-decoration: none;
+  outline: 0;
+}
+
+a:hover, a:focus {
+  color: #23527c;
+  text-decoration: underline;
+}
+
+.container {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.container > :nth-child(1) {
+  flex: 0 0 3rem;
+}
+
+.container > :nth-child(2) {
+  flex: 1;
+}
+
+.container > :nth-child(3) {
+  flex: 0 0 2.2rem;
+}
+
+header {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 0 0.6rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #222;
+  color: #555;
+}
+
+header a {
+  color: #bbb;
+}
+
+header a:hover, header a:focus {
+  color: #fff;
+  text-decoration: none;
+}
+
+header .logo {
+  font-size: 1.5rem;
+  padding-bottom: 0.2rem;
+}
+
+header .logo sup {
+  font-size: 0.7em;
+  display: inline-block;
+  transform: scaleY(0.7);
+}
+
+header nav {
+  padding-bottom: 0.2em;
+}
+
+.content {
+  display: flex;
+  align-items: center;
+  padding: 1rem;
+}
+
+footer {
+  border-top: 1px #eee solid;
+  width: 95%;
+  color: #777;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+}
+
+/* main page */
+
+.main-page .info {
+  text-align: center;
+  font-size: 1.4rem;
+  line-height: 2rem;
+  margin-bottom: 1rem;
+}
+
+.main-page .info sup {
+  font-size: .7rem;
+}
+
+.main-page .footnote {
+  margin-top: 1.5rem;
+  padding: 0.5rem;
+  font-size: 0.9rem;
+  border-top: 1px solid #ccc;
+}
+
+/* file links page */
+
+@media screen and (max-width: 1200px) {
+  .file-links-page {
+    width: 90vw;
+  }
+
+  .file-links-page .row {
+    flex-wrap: wrap;
+  }
+}
+
+@media screen and (min-width: 1200px) {
+  .file-links-page {
+    width: 70vw;
+  }
+}
+
+@media screen and (min-width: 1600px) {
+  .file-links-page {
+    width: 50vw;
+  }
+}
+
+.file-links-page .header {
+  margin-bottom: 2rem;
+}
+
+.file-links-page .row {
+  width: 100%;
+  display: flex;
+  margin: .3rem 0;
+}
+
+.file-links-page .row > * {
+  display: block;
+  padding: .4rem;
+  margin-right: .3rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-links-page .row > :first-child {
+  background: #f0f0f0;
+  flex: 1 1 20%;
+}
+
+.file-links-page .row > :last-child {
+  background: #fafafa;
+  flex: 5 1 80%;
+}
+
+.file-links-page .slider {
+  display: inline-block;
+  vertical-align: sub;
+  padding: .2em;
+  width: 1.5em;
+  border-radius: 1em;
+  background: #bbb;
+}
+
+.file-links-page .slider .dot {
+  display: block;
+  width: .7em;
+  height: .7em;
+  border-radius: .7em;
+  background: #fff;
+}
+
+.file-links-page #ext-toggle {
+  display: none;
+}
+
+.file-links-page .ext-label {
+  display: block;
+  margin: .5rem 0;
+  cursor: pointer;
+}
+
+.file-links-page #ext-toggle:checked ~ .ext-label .slider {
+  background: #23527c;
+}
+
+.file-links-page #ext-toggle:checked ~ .ext-label .slider .dot {
+  float: right;
+}
+
+.file-links-page #ext-toggle:checked ~ .ext-off {
+  display: none;
+}
+
+.file-links-page #ext-toggle:not(:checked) ~ .ext-on {
+  display: none;
+}
+
+/* upload page */
+
+.upload-page .upload-form {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.upload-page .upload-form.vertical {
+  flex-direction: column;
+}
+
+.upload-page .upload-form input {
+  padding: .2rem;
+}
+
+.upload-page .upload-form input[type="file"] {
+  width: 20rem;
+  max-width: 80vw;
+  background: #fafafa;
+  margin-right: .2rem;
+}
+
+.upload-page .upload-form textarea {
+  width: 80vw;
+  height: 60vh;
+  margin-bottom: 1rem;
+}
+
+/* error page */
+
+.error-page {
+  font-size: 4rem;
+  text-align: center;
+}

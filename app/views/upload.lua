@@ -1,11 +1,11 @@
 local upload = require('resty.upload')
-local template = require('resty.template')
 
 local tinyid = require('app.tinyid')
 local tg = require('app.tg')
 local utils = require('app.utils')
 local constants = require('app.constants')
-local render_link_factory = require('app.views.helpers').render_link_factory
+local helpers = require('app.views.helpers')
+
 local tg_upload_chat_id = require('config.app').tg.upload_chat_id
 
 local yield = coroutine.yield
@@ -17,6 +17,8 @@ local parse_media_type = utils.parse_media_type
 local normalize_media_type = utils.normalize_media_type
 local get_media_type_id = utils.get_media_type_id
 local guess_extension = utils.guess_extension
+local render_link_factory = helpers.render_link_factory
+local render = helpers.render
 
 local CHUNK_SIZE = constants.CHUNK_SIZE
 local TG_MAX_FILE_SIZE = constants.TG_MAX_FILE_SIZE
@@ -276,7 +278,7 @@ return {
     local csrftoken = generate_random_hex_string(16)
     ngx.header['set-cookie'] = (
       '%s=%s; Path=/; HttpOnly; SameSite=Strict'):format(FIELD_NAME_CSRFTOKEN, csrftoken)
-    template.render('web/upload.html', {
+    render('web/upload.html', {
       upload_type = upload_type,
       csrftoken_name = FIELD_NAME_CSRFTOKEN,
       csrftoken_value = csrftoken,

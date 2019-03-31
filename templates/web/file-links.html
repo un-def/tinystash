@@ -1,23 +1,51 @@
 {%
-  layout = 'web/layout.html'
+  local layout = 'web/layout.html'
   local ln_link = render_link(modes.LINKS)
   local dl_link = render_link(modes.DOWNLOAD)
   local il_link = render_link(modes.INLINE)
 %}
-{% if file_size then %}
-file size:   {{ file_size }}
-{% end %}
-media type:  {{ media_type }}
-
-
-<a href="{{ ln_link }}">links and preview</a>:  {{ ln_link }}
-
-direct links{% if extension then %} without extension{% end %}:
-<a href="{{ dl_link }}">download</a>:           {{ dl_link }}
-<a href="{{ il_link }}">inline</a>:             {{ il_link }}
-
-{% if extension then %}
-direct links with extension:
-<a href="{{ dl_link }}{{ extension }}">download</a>:           {{ dl_link }}{{ extension }}
-<a href="{{ il_link }}{{ extension }}">inline</a>:             {{ il_link }}{{ extension }}
-{% end %}
+<div class="file-links-page">
+  <div class="header">
+    <div class="row">
+      <span>media type</span>
+      <span>{{ media_type }}</span>
+    </div>
+    {% if file_size then %}
+      <div class="row">
+        <span>file size</span>
+        <span>{{ file_size }}</span>
+      </div>
+    {% end %}
+  </div>
+  {% if extension then %}
+    <input type="checkbox" id="ext-toggle" checked>
+    <label class="ext-label" for="ext-toggle">
+      <div class="slider">
+        <div class="dot"></div>
+      </div>
+      links with extension
+    </label>
+  {% end %}
+  <div class="row{% if extension then %} ext-off{% end %}">
+    <a href="{* dl_link *}">download</a>
+    <span>{{ dl_link }}</span>
+  </div>
+  <div class="row{% if extension then %} ext-off{% end %}">
+    <a href="{* il_link *}">inline</a>
+    <span>{{ il_link }}</span>
+  </div>
+  {% if extension then %}
+    <div class="row ext-on">
+      <a href="{* dl_link *}{{ extension }}">download</a>
+      <span>{{ dl_link }}{{ extension }}</span>
+    </div>
+    <div class="row ext-on">
+      <a href="{* il_link *}{{ extension }}">inline</a>
+      <span>{{ il_link }}{{ extension }}</span>
+    </div>
+  {% end %}
+  <div class="row">
+    <a href="{* ln_link *}">links page</a>
+    <span>{{ ln_link }}</span>
+  </div>
+</div>

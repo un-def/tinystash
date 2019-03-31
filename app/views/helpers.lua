@@ -15,8 +15,22 @@ _M.render_link_factory = function(tiny_id)
   end
 end
 
-_M.render_to_string = function(template_path, context, plain)
-  return template.compile(template_path, nil, plain)(context)
+local render_to_string = function(template_path, context, plain)
+  local full_context = {
+    link_url_prefix = link_url_prefix,
+  }
+  if type(context) == 'table' then
+    for k, v in pairs(context) do
+      full_context[k] = v
+    end
+  end
+  return template.compile(template_path, nil, plain)(full_context)
+end
+
+_M.render_to_string = render_to_string
+
+_M.render = function(template_path, context, plain)
+  ngx.print(render_to_string(template_path, context, plain))
 end
 
 return _M

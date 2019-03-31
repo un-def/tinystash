@@ -2,31 +2,25 @@
 <html lang="en">
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="{* link_url_prefix *}/static/style.css" rel="stylesheet">
   <title>{% if title then %}{{ title }}{* ' &mdash; ' *}{% end %}[tiny]stash</title>
-  <style>
-    html {
-      font-size: 62.5%;
-    }
-    body {
-      background-color: #f8f8f8;
-      font-family: monospace;
-      font-size: 1.8rem;
-      color: #24292e;
-      white-space: pre-wrap;
-    }
-    footer {
-      position: absolute;
-      bottom: 2rem;
-      left: 0;
-      width: 100%;
-      font-size: 1.2rem;
-      color: #7e868c;
-      text-align: center;
-    }
-    .footnote-block {
-      font-size: 1.4rem;
-      border-top: 1px solid #c0c0c0;
-    }
-  </style>
-<body>{* view *}</body>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo">
+        <a href="{* link_url_prefix *}/"><sup>tiny</sup>[stash]</a>
+      </div>
+      <nav>
+        [ <a href="{* link_url_prefix *}/upload/text">upload text</a> ]
+        [ <a href="{* link_url_prefix *}/upload">upload file</a> ]
+      </nav>
+    </header>
+    <div class="content">
+      {* view *}
+    </div>
+    <footer>
+      <span>Created by <a href="https://undef.im/">un.def</a>. Powered by <a href="http://luajit.org/">LuaJIT</a> and <a href="https://openresty.org/">OpenResty</a>.</span>
+    </footer>
+  </div>
+</body>
 </html>
