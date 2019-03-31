@@ -8,7 +8,19 @@ local helpers = require('app.views.helpers')
 
 local tg_upload_chat_id = require('config.app').tg.upload_chat_id
 
+
 local yield = coroutine.yield
+local ngx_redirect = ngx.redirect
+local ngx_null = ngx.null
+local ngx_DEBUG = ngx.DEBUG
+local ngx_WARN = ngx.WARN
+local ngx_ERR = ngx.ERR
+local ngx_HTTP_SEE_OTHER = ngx.HTTP_SEE_OTHER
+local ngx_HTTP_FORBIDDEN = ngx.HTTP_FORBIDDEN
+local ngx_HTTP_NOT_FOUND = ngx.HTTP_NOT_FOUND
+local ngx_HTTP_BAD_REQUEST = ngx.HTTP_BAD_REQUEST
+local ngx_HTTP_INTERNAL_SERVER_ERROR = ngx.HTTP_INTERNAL_SERVER_ERROR
+local ngx_HTTP_BAD_GATEWAY = ngx.HTTP_BAD_GATEWAY
 
 local log = utils.log
 local exit = utils.exit
@@ -88,8 +100,8 @@ uploader_meta.run = function(self)
     res, err = self:handle_form_field()
     if not res then
       log(err)
-      return nil, ngx.HTTP_BAD_REQUEST, err
-    elseif res == ngx.null then
+      return nil, ngx_HTTP_BAD_REQUEST, err
+    elseif res == ngx_null then
       log('end of form')
       break
     else
@@ -97,11 +109,11 @@ uploader_meta.run = function(self)
       if field_name == FIELD_NAME_CSRFTOKEN then
         csrftoken = initial_data
         if csrftoken ~= self.csrftoken then
-          return nil, ngx.HTTP_FORBIDDEN, 'invalid csrf token'
+          return nil, ngx_HTTP_FORBIDDEN, 'invalid csrf token'
         end
       elseif field_name == FIELD_NAME_FILE then
         if initial_data:len() == 0 then
-          return nil, ngx.HTTP_BAD_REQUEST, 'empty file'
+          return nil, ngx_HTTP_BAD_REQUEST, 'empty file'
         end
         if self.upload_type == 'text' then
           media_type = 'text/plain'
@@ -114,19 +126,19 @@ uploader_meta.run = function(self)
         log('media type: %s', media_type)
         file_object, err = self:upload(initial_data)
         if not file_object then
-          return nil, ngx.HTTP_INTERNAL_SERVER_ERROR, err
+          return nil, ngx_HTTP_BAD_GATEWAY, err
         end
       else
-        return nil, ngx.HTTP_BAD_REQUEST, format_error('unexpected form field', field_name)
+        return nil, ngx_HTTP_BAD_REQUEST, format_error('unexpected form field', field_name)
       end
     end
   end
   if not csrftoken then
-    return nil, ngx.HTTP_FORBIDDEN, 'no csrf token'
+    return nil, ngx_HTTP_FORBIDDEN, 'no csrf token'
   elseif csrftoken ~= self.csrftoken then
-    return nil, ngx.HTTP_FORBIDDEN, 'invalid csrf token'
+    return nil, ngx_HTTP_FORBIDDEN, 'invalid csrf token'
   elseif not file_object then
-    return nil, ngx.HTTP_BAD_REQUEST, 'no file'
+    return nil, ngx_HTTP_BAD_REQUEST, 'no file'
   end
   return file_object
 end
@@ -145,7 +157,7 @@ uploader_meta.handle_form_field = function(self)
     if not token then
       return nil, err
     elseif token == 'eof' then
-      return ngx.null
+      return ngx_null
     elseif token == 'header' then
       if type(data) ~= 'table' then
         return nil, 'invalid form-data part header'
@@ -244,7 +256,7 @@ uploader_meta.upload_body_coro = function(self, initial)
   while true do
     token, data, err = form:read()
     if not token then
-      log(ngx.ERR, 'failed to read next form chunk: %s', err)
+      log(ngx_ERR, 'failed to read next form chunk: %s', err)
       break
     elseif token == 'body' then
       yield_chunk(data)
@@ -252,7 +264,7 @@ uploader_meta.upload_body_coro = function(self, initial)
     elseif token == 'part_end' then
       break
     else
-      log(ngx.ERR, 'unexpected token: %s', token)
+      log(ngx_ERR, 'unexpected token: %s', token)
       break
     end
   end
@@ -266,7 +278,7 @@ return {
 
   initial = function(upload_type)
     if not tg_upload_chat_id then
-      exit(ngx.HTTP_NOT_FOUND)
+      exit(ngx_HTTP_NOT_FOUND)
     end
     if upload_type == '' then
       upload_type = 'file'
@@ -286,11 +298,10 @@ return {
   end,
 
   POST = function(upload_type)
-    ngx.header['content-type'] = 'text/plain'
-
     local cookie = ngx.var.http_cookie
     if not cookie then
-      exit(ngx.HTTP_FORBIDDEN)
+      log('no cookie header')
+      exit(ngx_HTTP_FORBIDDEN)
     end
     local csrftoken
     for key, value in cookie:gmatch('([^%c%s;]+)=([^%c%s;]+)') do
@@ -300,25 +311,28 @@ return {
       end
     end
     if not csrftoken then
-      exit(ngx.HTTP_FORBIDDEN)
+      log('no csrftoken cookie')
+      exit(ngx_HTTP_FORBIDDEN)
     end
 
     local uploader, err = prepare_uploader(upload_type, tg_upload_chat_id, csrftoken)
     if not uploader then
       log('failed to init uploader: %s', err)
-      exit(ngx.HTTP_BAD_REQUEST)
+      exit(ngx_HTTP_BAD_REQUEST)
     end
     local file_object, err_code
     file_object, err_code, err = uploader:run()
     uploader:close()
 
     if not file_object then
-      exit(err_code, err)
+      local loglevel = err_code >= 500 and ngx_ERR or ngx_DEBUG
+      log(loglevel, err)
+      exit(err_code)
     end
     local file_size = file_object.file_size
     local bytes_uploaded = uploader.bytes_uploaded
     if file_size and file_size ~= bytes_uploaded then
-      log(ngx.WARN, 'size mismatch: file_size: %d, bytes uploaded: %d',
+      log(ngx_WARN, 'size mismatch: file_size: %d, bytes uploaded: %d',
           file_size, bytes_uploaded)
     else
       log('bytes uploaded: %s', bytes_uploaded)
@@ -343,10 +357,10 @@ return {
       media_type_id = media_type_id,
     }
     if not tiny_id then
-      log(ngx.ERR, 'failed to encode tiny_id: %s', err)
-      exit(ngx.HTTP_INTERNAL_SERVER_ERROR)
+      log(ngx_ERR, 'failed to encode tiny_id: %s', err)
+      exit(ngx_HTTP_INTERNAL_SERVER_ERROR)
     end
-    ngx.redirect(render_link_factory(tiny_id)('ln'), ngx.HTTP_SEE_OTHER)
+    ngx_redirect(render_link_factory(tiny_id)('ln'), ngx_HTTP_SEE_OTHER)
   end
 
 }

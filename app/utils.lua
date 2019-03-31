@@ -6,8 +6,11 @@ local constants = require('app.constants')
 local mediatypes = require('app.mediatypes')
 
 
-local ngx_DEBUG = ngx.DEBUG
 local debug_getinfo = debug.getinfo
+local ngx_exit = ngx.exit
+local ngx_print = ngx.print
+local ngx_DEBUG = ngx.DEBUG
+local ngx_HTTP_OK = ngx.HTTP_OK
 
 local TG_TYPES_MEDIA_TYPES_MAP = constants.TG_TYPES_MEDIA_TYPES_MAP
 local TG_TYPES_EXTENSIONS_MAP = constants.TG_TYPES_EXTENSIONS_MAP
@@ -53,11 +56,11 @@ _M.log = function(...)
 end
 
 _M.exit = function(status, ...)
-  if select('#', ...) == 0 then ngx.exit(status) end
+  if select('#', ...) == 0 then ngx_exit(status) end
   ngx.status = status
   ngx.header['content-type'] = 'text/plain'
-  ngx.print(...)
-  ngx.exit(ngx.HTTP_OK)
+  ngx_print(...)
+  ngx_exit(ngx_HTTP_OK)
 end
 
 _M.generate_random_hex_string = function(size)

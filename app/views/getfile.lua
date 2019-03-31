@@ -5,6 +5,13 @@ local tg = require('app.tg')
 local helpers = require('app.views.helpers')
 
 
+local ngx_print = ngx.print
+local ngx_INFO = ngx.INFO
+local ngx_ERR = ngx.ERR
+local ngx_HTTP_OK = ngx.HTTP_OK
+local ngx_HTTP_NOT_FOUND = ngx.HTTP_NOT_FOUND
+local ngx_HTTP_BAD_GATEWAY = ngx.HTTP_BAD_GATEWAY
+
 local log = utils.log
 local exit = utils.exit
 local escape_uri = utils.escape_uri
@@ -26,18 +33,18 @@ local CHUNK_SIZE = constants.CHUNK_SIZE
 return {
 
   GET = function(tiny_id, mode, file_name)
-    -- decode tinyid
+    -- decode tiny_id
     local tiny_id_params, tiny_id_err = tinyid.decode(tiny_id)
     if not tiny_id_params then
-      log(ngx.INFO, 'tiny_id decode error: %s', tiny_id_err)
-      exit(ngx.HTTP_NOT_FOUND)
+      log(ngx_INFO, 'tiny_id decode error: %s', tiny_id_err)
+      exit(ngx_HTTP_NOT_FOUND)
     end
 
     local conn, res, err, params
     conn, err = prepare_connection()
     if not conn then
-      log(ngx.ERR, 'tg api request error: %s', err)
-      exit(ngx.HTTP_INTERNAL_SERVER_ERROR, err)
+      log(ngx_ERR, 'tg api request error: %s', err)
+      exit(ngx_HTTP_BAD_GATEWAY)
     end
 
     -- get file info
@@ -47,12 +54,12 @@ return {
     }
     res, err = request_tg_server(conn, params, true)
     if not res then
-      log(ngx.ERR, 'tg api request error: %s', err)
-      exit(ngx.HTTP_INTERNAL_SERVER_ERROR, err)
+      log(ngx_ERR, 'tg api request error: %s', err)
+      exit(ngx_HTTP_BAD_GATEWAY)
     end
     if not res.ok then
-      log(ngx.INFO, 'tg api response is not "ok": %s', res.description)
-      exit(ngx.HTTP_NOT_FOUND, res.description)
+      log(ngx_INFO, 'tg api response is not "ok": %s', res.description)
+      exit(ngx_HTTP_NOT_FOUND)
     end
 
     local file_path = res.result.file_path
@@ -68,12 +75,12 @@ return {
     end
     res, err = request_tg_server(conn, params)
     if not res then
-      log(ngx.ERR, 'tg file storage request error: %s', err)
-      exit(ngx.HTTP_INTERNAL_SERVER_ERROR, err)
+      log(ngx_ERR, 'tg file storage request error: %s', err)
+      exit(ngx_HTTP_BAD_GATEWAY)
     end
-    if res.status ~= ngx.HTTP_OK then
-      log(ngx.ERR, 'tg file storage response status %s != 200', res.status)
-      exit(ngx.HTTP_NOT_FOUND)
+    if res.status ~= ngx_HTTP_OK then
+      log(ngx_ERR, 'tg file storage response status %s != 200', res.status)
+      exit(ngx_HTTP_NOT_FOUND)
     end
 
     local file_size = res.headers['Content-Length']
@@ -125,11 +132,11 @@ return {
       while true do
         chunk, err = res.body_reader(CHUNK_SIZE)
         if err then
-          log(ngx.ERR, 'tg file storage read error: %s', err)
+          log(ngx_ERR, 'tg file storage read error: %s', err)
           break
         end
         if not chunk then break end
-        ngx.print(chunk)
+        ngx_print(chunk)
       end
 
     end
