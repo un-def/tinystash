@@ -63,29 +63,8 @@ return {
     end
 
     local file_path = res.result.file_path
-
-    -- connect to tg file storage
-    params = {
-      path = escape_uri('/file/bot%s/' .. file_path)
-    }
-    if mode == GET_FILE_MODES.LINKS then
-      params.method = 'HEAD'
-    else
-      params.method = 'GET'
-    end
-    res, err = request_tg_server(conn, params)
-    if not res then
-      log(ngx_ERR, 'tg file storage request error: %s', err)
-      exit(ngx_HTTP_BAD_GATEWAY)
-    end
-    if res.status ~= ngx_HTTP_OK then
-      log(ngx_ERR, 'tg file storage response status %s != 200', res.status)
-      exit(ngx_HTTP_NOT_FOUND)
-    end
-
-    local file_size = res.headers['Content-Length']
+    local file_size = res.result.file_size
     local media_type = tiny_id_params.media_type or 'application/octet-stream'
-
     local extension
     -- fix voice message file .oga extension
     if file_path:match('^voice/.+%.oga$') then
@@ -97,8 +76,9 @@ return {
       }
     end
 
+    -- /ln/ -> render links page
+
     if mode == GET_FILE_MODES.LINKS then
-      -- /ln/ -> render links page
       render('web/file-links.html', {
         title = tiny_id,
         file_size = file_size,
@@ -107,41 +87,57 @@ return {
         render_link = render_link_factory(tiny_id),
         extension = extension,
       })
-    else
-      -- /dl/ or /il/ -> stream file content from tg file storage
-      if not file_name or #file_name < 1 then
-        file_name = tiny_id .. (extension or '')
-      end
-      local content_disposition
-      if mode == GET_FILE_MODES.DOWNLOAD then
-        content_disposition = 'attachment'
-      else
-        content_disposition = 'inline'
-      end
-
-      local content_type = media_type
-      if parse_media_type(media_type)[1] == 'text' then
-        content_type = content_type .. '; charset=utf-8'
-      end
-      ngx.header['content-type'] = content_type
-      ngx.header['content-disposition'] = ("%s; filename*=utf-8''%s"):format(
-        content_disposition, escape_uri(file_name, true))
-      ngx.header['content-length'] = file_size
-
-      local chunk
-      while true do
-        chunk, err = res.body_reader(CHUNK_SIZE)
-        if err then
-          log(ngx_ERR, 'tg file storage read error: %s', err)
-          break
-        end
-        if not chunk then break end
-        ngx_print(chunk)
-      end
-
+      return
     end
 
-    -- put connection to connection pool
+    -- /dl/ or /il/ -> stream file content from tg file storage
+
+    -- connect to tg file storage
+    params = {
+      path = escape_uri('/file/bot%s/' .. file_path),
+    }
+    res, err = request_tg_server(conn, params)
+    if not res then
+      log(ngx_ERR, 'tg file storage request error: %s', err)
+      conn:set_keepalive()
+      exit(ngx_HTTP_BAD_GATEWAY)
+    end
+    if res.status ~= ngx_HTTP_OK then
+      log(ngx_ERR, 'tg file storage response status %s != 200', res.status)
+      conn:set_keepalive()
+      exit(ngx_HTTP_NOT_FOUND)
+    end
+
+    if not file_name or #file_name < 1 then
+      file_name = tiny_id .. (extension or '')
+    end
+    local content_disposition
+    if mode == GET_FILE_MODES.DOWNLOAD then
+      content_disposition = 'attachment'
+    else
+      content_disposition = 'inline'
+    end
+
+    local content_type = media_type
+    if parse_media_type(media_type)[1] == 'text' then
+      content_type = content_type .. '; charset=utf-8'
+    end
+    ngx.header['content-type'] = content_type
+    ngx.header['content-disposition'] = ("%s; filename*=utf-8''%s"):format(
+      content_disposition, escape_uri(file_name, true))
+    ngx.header['content-length'] = file_size
+
+    local chunk
+    while true do
+      chunk, err = res.body_reader(CHUNK_SIZE)
+      if err then
+        log(ngx_ERR, 'tg file storage read error: %s', err)
+        break
+      end
+      if not chunk then break end
+      ngx_print(chunk)
+    end
+
     conn:set_keepalive()
 
   end
