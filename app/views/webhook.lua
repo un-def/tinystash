@@ -23,6 +23,7 @@ local tg_bot_username = config.tg.bot_username
 local tg_webhook_secret = config.tg.webhook_secret or tg_token
 local hide_image_download_link = config.hide_image_download_link
 
+local link_url_prefix = helpers.link_url_prefix
 local render_link_factory = helpers.render_link_factory
 local render_to_string = helpers.render_to_string
 
@@ -75,7 +76,9 @@ return {
       if is_groupchat and bot_username ~= tg_bot_username then
         exit(ngx.HTTP_OK)
       end
-      send_webhook_response(message, 'bot/ok-help.txt')
+      send_webhook_response(message, 'bot/ok-help.txt', {
+        link_url_prefix = link_url_prefix,
+      })
     end
 
     -- tricky way to ignore groupchat service messages (e.g., new_chat_member)

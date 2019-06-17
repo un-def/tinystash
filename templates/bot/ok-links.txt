@@ -1,11 +1,11 @@
 {( includes/user_mention.txt )}
-*Direct inline link (view in browser)*:
+*Inline link (view in browser)*:
 {* render_link(modes.INLINE) *}{* extension *}
 
 {% if not hide_download_link then %}
-*Direct download link*:
+*Download link*:
 {* render_link(modes.DOWNLOAD) *}{* extension *}
 
 {% end %}
-*All links and preview page*:
+*Links page*:
 {* render_link(modes.LINKS) *}
