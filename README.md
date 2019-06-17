@@ -84,4 +84,4 @@ Source Sans Pro font is licensed under the [SIL Open Font License, Version 1.1][
 [openresty_installation]: https://openresty.org/en/installation.html
 [tinystash_bot]: https://t.me/tinystash_bot
 [license]: https://github.com/un-def/tinystash/blob/master/LICENSE
-[license-font]: https://github.com/un-def/tinystash/blob/master/OFL.txt
+[license-font]: https://github.com/un-def/tinystash/blob/master/static/OFL.txt
