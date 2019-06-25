@@ -1,7 +1,7 @@
 # ᵗⁱⁿʸ[stash]
 
 [![version](https://img.shields.io/github/tag/un-def/tinystash.svg?maxAge=3600&style=flat-square&label=version)](https://github.com/un-def/tinystash/releases)
-[![license](https://img.shields.io/github/license/un-def/tinystash.svg?maxAge=3600&style=flat-square)](https://github.com/un-def/tinystash/blob/master/LICENSE)
+[![license](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](https://github.com/un-def/tinystash/blob/master/LICENSE)
 [![Docker pulls](https://img.shields.io/docker/pulls/un1def/tinystash.svg?maxAge=3600&style=flat-square)](https://hub.docker.com/r/un1def/tinystash/)
 
 A storage-less, database-less, \_\_\_\_\_\_\_\_-less filesharing. Send anything to [@tinystash_bot][tinystash_bot] [Telegram][telegram] bot. Get an opaque http link. Share it.
