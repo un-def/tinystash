@@ -1,4 +1,4 @@
-project = 'tinystash'
+project := 'tinystash'
 
 _list:
   @just --list

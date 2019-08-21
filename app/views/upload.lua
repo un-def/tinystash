@@ -93,7 +93,9 @@ uploader_meta.run = function(self)
   --   if ok: TG API object (Document/Video/...) table with mandatory 'file_id' field
   --   if error: nil, error_code, error_text?
   -- sets:
-  --  self.media_type: string
+  --  self.media_type: string (via set_media_type)
+  --  self.boundary: string (via set_boundary)
+  --  self.conn: http connection (via upload)
   local file_object, csrftoken
   local res, err
   while true do
@@ -115,16 +117,10 @@ uploader_meta.run = function(self)
         if initial_data:len() == 0 then
           return nil, ngx_HTTP_BAD_REQUEST, 'empty file'
         end
-        if self.upload_type == 'text' then
-          media_type = 'text/plain'
-        elseif not media_type then
-          media_type = 'application/octet-stream'
-        else
-          media_type = normalize_media_type(media_type)
-        end
-        self.media_type = media_type
-        log('media type: %s', media_type)
-        file_object, err = self:upload(initial_data)
+        self:set_media_type(media_type)
+        self:set_boundary()
+        local upload_body_iterator = self:get_upload_body_iterator(initial_data)
+        file_object, err = self:upload(upload_body_iterator)
         if not file_object then
           return nil, ngx_HTTP_BAD_GATEWAY, err
         end
@@ -141,6 +137,28 @@ uploader_meta.run = function(self)
     return nil, ngx_HTTP_BAD_REQUEST, 'no file'
   end
   return file_object
+end
+
+uploader_meta.set_media_type = function(self, media_type)
+  -- media_type: string or nil
+  -- sets:
+  --  self.media_type
+  if self.upload_type == 'text' then
+    media_type = 'text/plain'
+  elseif not media_type then
+    media_type = 'application/octet-stream'
+  else
+    media_type = normalize_media_type(media_type)
+  end
+  log('media type: %s', media_type)
+  self.media_type = media_type
+end
+
+uploader_meta.set_boundary = function(self)
+  -- sets:
+  --  self.media_type
+  local boundary = 'BNDR-' .. generate_random_hex_string(32)
+  self.boundary = boundary
 end
 
 uploader_meta.handle_form_field = function(self)
@@ -175,27 +193,24 @@ uploader_meta.handle_form_field = function(self)
   end
 end
 
-uploader_meta.upload = function(self, initial)
-  -- initial: string or nil, first chunk of file
+uploader_meta.upload = function(self, upload_body_iterator)
+  -- upload_body_iterator: iterator function producing body chunks
   -- returns:
   --  if ok: table -- TG API object (Document/Video/...) table
   --  if error: nil, err
   -- sets:
-  --  self.boundary: string
-  local boundary = 'BNDR-' .. generate_random_hex_string(32)
-  self.boundary = boundary
+  --  self.conn: http connection
   local conn, res, err
   conn, err = prepare_connection()
   if not conn then
     return nil, err
   end
   self.conn = conn
-  local upload_body_iterator = self:get_upload_body_iterator(initial)
   local params = {
     path = '/bot%s/sendDocument',
     method = 'POST',
     headers = {
-      ['content-type'] = 'multipart/form-data; boundary=' .. boundary,
+      ['content-type'] = 'multipart/form-data; boundary=' .. self.boundary,
       ['transfer-encoding'] = 'chunked',
     },
     body = upload_body_iterator,
@@ -298,21 +313,27 @@ return {
   end,
 
   POST = function(upload_type)
-    local cookie = ngx.var.http_cookie
-    if not cookie then
-      log('no cookie header')
-      exit(ngx_HTTP_FORBIDDEN)
-    end
+    local headers = ngx.req.get_headers()
+    local app_id = headers['app-id']
     local csrftoken
-    for key, value in cookie:gmatch('([^%c%s;]+)=([^%c%s;]+)') do
-      if key == FIELD_NAME_CSRFTOKEN then
-        csrftoken = value
-        break
+    if app_id then
+      log('app_id: %s', app_id)
+    else
+      local cookie = headers['cookie']
+      if not cookie then
+        log('no cookie header')
+        exit(ngx_HTTP_FORBIDDEN)
       end
-    end
-    if not csrftoken then
-      log('no csrftoken cookie')
-      exit(ngx_HTTP_FORBIDDEN)
+      for key, value in cookie:gmatch('([^%c%s;]+)=([^%c%s;]+)') do
+        if key == FIELD_NAME_CSRFTOKEN then
+          csrftoken = value
+          break
+        end
+      end
+      if not csrftoken then
+        log('no csrftoken cookie')
+        exit(ngx_HTTP_FORBIDDEN)
+      end
     end
 
     local uploader, err = prepare_uploader(upload_type, tg_upload_chat_id, csrftoken)
