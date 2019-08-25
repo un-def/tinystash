@@ -1,8 +1,8 @@
 local upload = require('resty.upload')
 
-local tg = require('app.tg')
 local utils = require('app.utils')
 local constants = require('app.constants')
+local base_uploader = require('app.uploader.base')
 
 
 local yield = coroutine.yield
@@ -13,27 +13,15 @@ local ngx_HTTP_BAD_REQUEST = ngx.HTTP_BAD_REQUEST
 local ngx_HTTP_BAD_GATEWAY = ngx.HTTP_BAD_GATEWAY
 
 local log = utils.log
+local format_error = utils.format_error
 local generate_random_hex_string = utils.generate_random_hex_string
-local normalize_media_type = utils.normalize_media_type
 local guess_extension = utils.guess_extension
 
 local CHUNK_SIZE = constants.CHUNK_SIZE
 
-local prepare_connection = tg.prepare_connection
-local request_tg_server = tg.request_tg_server
-local get_file_from_message = tg.get_file_from_message
-
 
 local FIELD_NAME_FILE = 'file'
 local FIELD_NAME_CSRFTOKEN = 'csrftoken'
-
-
-local format_error = function(preamble, error)
-  if not error then
-    return preamble
-  end
-  return ('%s: %s'):format(preamble, error)
-end
 
 
 local yield_chunk = function(bytes)
@@ -48,15 +36,12 @@ local get_form_field_name = function(content_disposition)
 end
 
 
-local _M = {
-  FIELD_NAME_FILE = FIELD_NAME_FILE,
-  FIELD_NAME_CSRFTOKEN = FIELD_NAME_CSRFTOKEN,
-}
+local _M = setmetatable({}, base_uploader)
 
+_M.__index = _M
 
-local uploader_meta = {}
-uploader_meta.__index = uploader_meta
-
+_M.FIELD_NAME_FILE = FIELD_NAME_FILE
+_M.FIELD_NAME_CSRFTOKEN = FIELD_NAME_CSRFTOKEN
 
 _M.new = function(_, upload_type, chat_id, csrftoken)
   local form, err = upload:new(CHUNK_SIZE)
@@ -69,25 +54,16 @@ _M.new = function(_, upload_type, chat_id, csrftoken)
     chat_id = chat_id,
     csrftoken = csrftoken,
     form = form,
-    -- bytes_uploaded = nil | number (set by upload_body_coro)
-    -- media_type = nil | string (set by run)
-  }, uploader_meta)
+  }, _M)
 end
 
-
-uploader_meta.close = function(self)
-  if self.conn then
-    self.conn:set_keepalive()
-  end
-end
-
-uploader_meta.run = function(self)
+_M.run = function(self)
   -- returns:
   --   if ok: TG API object (Document/Video/...) table with mandatory 'file_id' field
   --   if error: nil, error_code, error_text?
   -- sets:
   --  self.media_type: string (via set_media_type)
-  --  self.boundary: string (via set_boundary)
+  --  self.boundary: string
   --  self.conn: http connection (via upload)
   --  self.bytes_uploaded: int (via upload)
   local file_object, csrftoken
@@ -112,7 +88,7 @@ uploader_meta.run = function(self)
           return nil, ngx_HTTP_BAD_REQUEST, 'empty file'
         end
         self:set_media_type(media_type)
-        self:set_boundary()
+        self.boundary = 'BNDR-' .. generate_random_hex_string(32)
         local upload_body_iterator = self:get_upload_body_iterator(initial_data)
         file_object, err = self:upload(upload_body_iterator)
         if not file_object then
@@ -133,29 +109,7 @@ uploader_meta.run = function(self)
   return file_object
 end
 
-uploader_meta.set_media_type = function(self, media_type)
-  -- media_type: string or nil
-  -- sets:
-  --  self.media_type
-  if self.upload_type == 'text' then
-    media_type = 'text/plain'
-  elseif not media_type then
-    media_type = 'application/octet-stream'
-  else
-    media_type = normalize_media_type(media_type)
-  end
-  log('media type: %s', media_type)
-  self.media_type = media_type
-end
-
-uploader_meta.set_boundary = function(self)
-  -- sets:
-  --  self.media_type
-  local boundary = 'BNDR-' .. generate_random_hex_string(32)
-  self.boundary = boundary
-end
-
-uploader_meta.handle_form_field = function(self)
+_M.handle_form_field = function(self)
   -- returns:
   --  if eof: ngx.null
   --  if body (any): first chunk of body ("initial_data")
@@ -187,59 +141,14 @@ uploader_meta.handle_form_field = function(self)
   end
 end
 
-uploader_meta.upload = function(self, upload_body_iterator)
-  -- upload_body_iterator: iterator function producing body chunks
-  -- returns:
-  --  if ok: table -- TG API object (Document/Video/...) table
-  --  if error: nil, err
-  -- sets:
-  --  self.conn: http connection
-  --  self.bytes_uploaded: int (via upload_body_iterator)
-  local conn, res, err
-  conn, err = prepare_connection()
-  if not conn then
-    return nil, err
-  end
-  self.conn = conn
-  local params = {
-    path = '/bot%s/sendDocument',
-    method = 'POST',
-    headers = {
-      ['content-type'] = 'multipart/form-data; boundary=' .. self.boundary,
-      ['transfer-encoding'] = 'chunked',
-    },
-    body = upload_body_iterator,
-  }
-  res, err = request_tg_server(conn, params, true)
-  if not res then
-    return nil, format_error('tg api request error', err)
-  end
-  if not res.ok then
-    return nil, format_error('tg api response is not "ok"', res.description)
-  end
-  if not res.result then
-    return nil, 'tg api response has no "result"'
-  end
-  local file
-  file, err = get_file_from_message(res.result)
-  if not file then
-    return nil, err
-  end
-  local file_object = file.object
-  if not file_object.file_id then
-    return nil, 'tg api response has no file_id'
-  end
-  return file_object
-end
-
-uploader_meta.get_upload_body_iterator = function(self, initial)
+_M.get_upload_body_iterator = function(self, initial)
   local iterator = coroutine.wrap(self.upload_body_coro)
   -- pass function arguments in the first call (priming)
   iterator(self, initial)
   return iterator
 end
 
-uploader_meta.upload_body_coro = function(self, initial)
+_M.upload_body_coro = function(self, initial)
   -- sets:
   --   self.bytes_uploaded: number
   -- send nothing on first call (iterator priming)
@@ -282,5 +191,6 @@ uploader_meta.upload_body_coro = function(self, initial)
   yield_chunk(nil)
   self.bytes_uploaded = bytes_uploaded
 end
+
 
 return _M

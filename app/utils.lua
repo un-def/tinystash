@@ -63,6 +63,13 @@ _M.exit = function(status, ...)
   ngx_exit(ngx_HTTP_OK)
 end
 
+_M.format_error = function(preamble, error)
+  if not error then
+    return preamble
+  end
+  return ('%s: %s'):format(preamble, error)
+end
+
 _M.generate_random_hex_string = function(size)
   return to_hex(random_bytes(size))
 end

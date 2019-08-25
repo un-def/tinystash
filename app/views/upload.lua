@@ -2,7 +2,7 @@ local tinyid = require('app.tinyid')
 local utils = require('app.utils')
 local constants = require('app.constants')
 local helpers = require('app.views.helpers')
-local uploader = require('app.uploader')
+local formdata_uploader = require('app.uploader.formdata')
 
 local tg_upload_chat_id = require('config.app').tg.upload_chat_id
 
@@ -27,7 +27,7 @@ local render = helpers.render
 
 local TG_MAX_FILE_SIZE = constants.TG_MAX_FILE_SIZE
 
-local FIELD_NAME_CSRFTOKEN = uploader.FIELD_NAME_CSRFTOKEN
+local FIELD_NAME_CSRFTOKEN = formdata_uploader.FIELD_NAME_CSRFTOKEN
 
 
 return {
@@ -77,7 +77,7 @@ return {
       end
     end
 
-    local upldr, err = uploader:new(upload_type, tg_upload_chat_id, csrftoken)
+    local upldr, err = formdata_uploader:new(upload_type, tg_upload_chat_id, csrftoken)
     if not upldr then
       log('failed to init uploader: %s', err)
       exit(ngx_HTTP_BAD_REQUEST)
