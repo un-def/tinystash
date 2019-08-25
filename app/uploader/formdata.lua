@@ -5,7 +5,6 @@ local constants = require('app.constants')
 local base_uploader = require('app.uploader.base')
 
 
-local yield = coroutine.yield
 local ngx_null = ngx.null
 local ngx_ERR = ngx.ERR
 local ngx_HTTP_FORBIDDEN = ngx.HTTP_FORBIDDEN
@@ -14,21 +13,12 @@ local ngx_HTTP_BAD_GATEWAY = ngx.HTTP_BAD_GATEWAY
 
 local log = utils.log
 local format_error = utils.format_error
-local generate_random_hex_string = utils.generate_random_hex_string
-local guess_extension = utils.guess_extension
 
 local CHUNK_SIZE = constants.CHUNK_SIZE
 
 
 local FIELD_NAME_FILE = 'file'
 local FIELD_NAME_CSRFTOKEN = 'csrftoken'
-
-
-local yield_chunk = function(bytes)
-  -- yield chunked transfer encoding chunk
-  if bytes == nil then bytes = '' end
-  yield(('%X\r\n%s\r\n'):format(#bytes, bytes))
-end
 
 
 local get_form_field_name = function(content_disposition)
@@ -43,7 +33,21 @@ _M.__index = _M
 _M.FIELD_NAME_FILE = FIELD_NAME_FILE
 _M.FIELD_NAME_CSRFTOKEN = FIELD_NAME_CSRFTOKEN
 
-_M.new = function(_, upload_type, chat_id, csrftoken)
+_M.new = function(_, upload_type, chat_id, headers)
+  local cookie = headers['cookie']
+  if not cookie then
+    return nil, 'no cookie header'
+  end
+  local csrftoken
+  for key, value in cookie:gmatch('([^%c%s;]+)=([^%c%s;]+)') do
+    if key == FIELD_NAME_CSRFTOKEN then
+      csrftoken = value
+      break
+    end
+  end
+  if not csrftoken then
+    return nil, 'no csrftoken cookie'
+  end
   local form, err = upload:new(CHUNK_SIZE)
   if not form then
     return nil, err
@@ -63,7 +67,7 @@ _M.run = function(self)
   --   if error: nil, error_code, error_text?
   -- sets:
   --  self.media_type: string (via set_media_type)
-  --  self.boundary: string
+  --  self.boundary: string (via set_boundary)
   --  self.conn: http connection (via upload)
   --  self.bytes_uploaded: int (via upload)
   local file_object, csrftoken
@@ -71,7 +75,6 @@ _M.run = function(self)
   while true do
     res, err = self:handle_form_field()
     if not res then
-      log(err)
       return nil, ngx_HTTP_BAD_REQUEST, err
     elseif res == ngx_null then
       log('end of form')
@@ -88,9 +91,9 @@ _M.run = function(self)
           return nil, ngx_HTTP_BAD_REQUEST, 'empty file'
         end
         self:set_media_type(media_type)
-        self.boundary = 'BNDR-' .. generate_random_hex_string(32)
-        local upload_body_iterator = self:get_upload_body_iterator(initial_data)
-        file_object, err = self:upload(upload_body_iterator)
+        self:set_boundary()
+        local content_iterator = self:get_content_iterator(initial_data)
+        file_object, err = self:upload(content_iterator)
         if not file_object then
           return nil, ngx_HTTP_BAD_GATEWAY, err
         end
@@ -141,55 +144,28 @@ _M.handle_form_field = function(self)
   end
 end
 
-_M.get_upload_body_iterator = function(self, initial)
-  local iterator = coroutine.wrap(self.upload_body_coro)
-  -- pass function arguments in the first call (priming)
-  iterator(self, initial)
-  return iterator
-end
-
-_M.upload_body_coro = function(self, initial)
-  -- sets:
-  --   self.bytes_uploaded: number
-  -- send nothing on first call (iterator priming)
-  yield(nil)
-  local media_type = self.media_type
-  local boundary = self.boundary
-  local sep = ('--%s\r\n'):format(boundary)
-  local ext = guess_extension{media_type = media_type, exclude_dot = true} or 'bin'
-  local filename = ('%s.%s'):format(generate_random_hex_string(16), ext)
-  yield_chunk(sep)
-  yield_chunk('content-disposition: form-data; name="chat_id"\r\n\r\n')
-  yield_chunk(('%s\r\n'):format(self.chat_id))
-  yield_chunk(sep)
-  yield_chunk(('content-disposition: form-data; name="document"; filename="%s"\r\n'):format(filename))
-  yield_chunk(('content-type: %s\r\n\r\n'):format(media_type))
-  local bytes_uploaded = 0
-  if initial then
-    -- first chunk of the file
-    yield_chunk(initial)
-    bytes_uploaded = bytes_uploaded + #initial
-  end
+_M.get_content_iterator = function(self, initial)
   local form = self.form
-  local token, data, err
-  while true do
-    token, data, err = form:read()
+  local initial_sent = false
+  return function()
+    if not initial_sent and initial then
+      initial_sent = true
+      -- first chunk of the file
+      return initial
+    end
+    local token, data, err = form:read()
     if not token then
       log(ngx_ERR, 'failed to read next form chunk: %s', err)
-      break
+      return nil
     elseif token == 'body' then
-      yield_chunk(data)
-      bytes_uploaded = bytes_uploaded + #data
+      return data
     elseif token == 'part_end' then
-      break
+      return nil
     else
       log(ngx_ERR, 'unexpected token: %s', token)
-      break
+      return nil
     end
   end
-  yield_chunk(('\r\n--%s--\r\n'):format(boundary))
-  yield_chunk(nil)
-  self.bytes_uploaded = bytes_uploaded
 end
 
 

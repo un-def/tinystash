@@ -1,18 +1,21 @@
+local json = require('cjson.safe')
+
 local tinyid = require('app.tinyid')
 local utils = require('app.utils')
 local constants = require('app.constants')
 local helpers = require('app.views.helpers')
 local formdata_uploader = require('app.uploader.formdata')
+local raw_uploader = require('app.uploader.raw')
 
 local tg_upload_chat_id = require('config.app').tg.upload_chat_id
 
 
 local ngx_redirect = ngx.redirect
+local ngx_print = ngx.print
 local ngx_DEBUG = ngx.DEBUG
 local ngx_WARN = ngx.WARN
 local ngx_ERR = ngx.ERR
 local ngx_HTTP_SEE_OTHER = ngx.HTTP_SEE_OTHER
-local ngx_HTTP_FORBIDDEN = ngx.HTTP_FORBIDDEN
 local ngx_HTTP_NOT_FOUND = ngx.HTTP_NOT_FOUND
 local ngx_HTTP_BAD_REQUEST = ngx.HTTP_BAD_REQUEST
 local ngx_HTTP_INTERNAL_SERVER_ERROR = ngx.HTTP_INTERNAL_SERVER_ERROR
@@ -55,44 +58,29 @@ return {
 
   POST = function(upload_type)
     local headers = ngx.req.get_headers()
+    local uploader_type
     local app_id = headers['app-id']
-    local csrftoken
     if app_id then
       log('app_id: %s', app_id)
+      uploader_type = raw_uploader
     else
-      local cookie = headers['cookie']
-      if not cookie then
-        log('no cookie header')
-        exit(ngx_HTTP_FORBIDDEN)
-      end
-      for key, value in cookie:gmatch('([^%c%s;]+)=([^%c%s;]+)') do
-        if key == FIELD_NAME_CSRFTOKEN then
-          csrftoken = value
-          break
-        end
-      end
-      if not csrftoken then
-        log('no csrftoken cookie')
-        exit(ngx_HTTP_FORBIDDEN)
-      end
+      uploader_type = formdata_uploader
     end
-
-    local upldr, err = formdata_uploader:new(upload_type, tg_upload_chat_id, csrftoken)
-    if not upldr then
+    local uploader, err = uploader_type:new(upload_type, tg_upload_chat_id, headers)
+    if not uploader then
       log('failed to init uploader: %s', err)
       exit(ngx_HTTP_BAD_REQUEST)
     end
     local file_object, err_code
-    file_object, err_code, err = upldr:run()
-    upldr:close()
-
+    file_object, err_code, err = uploader:run()
+    uploader:close()
     if not file_object then
       local loglevel = err_code >= 500 and ngx_ERR or ngx_DEBUG
       log(loglevel, err)
       exit(err_code)
     end
     local file_size = file_object.file_size
-    local bytes_uploaded = upldr.bytes_uploaded
+    local bytes_uploaded = uploader.bytes_uploaded
     if file_size and file_size ~= bytes_uploaded then
       log(ngx_WARN, 'size mismatch: file_size: %d, bytes uploaded: %d',
           file_size, bytes_uploaded)
@@ -104,7 +92,7 @@ return {
       exit(413)
     end
 
-    local media_type = upldr.media_type
+    local media_type = uploader.media_type
     local media_type_id = get_media_type_id(media_type)
     if not media_type_id then
       local media_type_table = parse_media_type(media_type)
@@ -122,7 +110,28 @@ return {
       log(ngx_ERR, 'failed to encode tiny_id: %s', err)
       exit(ngx_HTTP_INTERNAL_SERVER_ERROR)
     end
-    ngx_redirect(render_link_factory(tiny_id)('ln'), ngx_HTTP_SEE_OTHER)
+
+    local render_link = render_link_factory(tiny_id)
+    if app_id then
+      if headers['accept'] == 'application/json' then
+        ngx.header['content-type'] = 'application/json'
+        ngx.print(json.encode{
+          file_size = file_size,
+          media_type = media_type,
+          tiny_id = tiny_id,
+          links = {
+            inline = render_link('il'),
+            download = render_link('dl'),
+            links_page = render_link('ln'),
+          },
+        })
+      else
+        ngx.header['content-type'] = 'text/plain'
+        ngx_print(render_link('ln'))
+      end
+    else
+      ngx_redirect(render_link('ln'), ngx_HTTP_SEE_OTHER)
+    end
   end
 
 }
