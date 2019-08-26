@@ -17,7 +17,6 @@ local ngx_WARN = ngx.WARN
 local ngx_ERR = ngx.ERR
 local ngx_HTTP_SEE_OTHER = ngx.HTTP_SEE_OTHER
 local ngx_HTTP_NOT_FOUND = ngx.HTTP_NOT_FOUND
-local ngx_HTTP_BAD_REQUEST = ngx.HTTP_BAD_REQUEST
 local ngx_HTTP_INTERNAL_SERVER_ERROR = ngx.HTTP_INTERNAL_SERVER_ERROR
 
 local log = utils.log
@@ -31,6 +30,14 @@ local render = helpers.render
 local TG_MAX_FILE_SIZE = constants.TG_MAX_FILE_SIZE
 
 local FIELD_NAME_CSRFTOKEN = formdata_uploader.FIELD_NAME_CSRFTOKEN
+
+
+local err_code_to_log_level = function(err_code)
+  if err_code >= 500 then
+    return ngx_ERR
+  end
+  return ngx_DEBUG
+end
 
 
 return {
@@ -66,17 +73,16 @@ return {
     else
       uploader_type = formdata_uploader
     end
-    local uploader, err = uploader_type:new(upload_type, tg_upload_chat_id, headers)
+    local uploader, err_code, err = uploader_type:new(upload_type, tg_upload_chat_id, headers)
     if not uploader then
-      log('failed to init uploader: %s', err)
-      exit(ngx_HTTP_BAD_REQUEST)
+      log(err_code_to_log_level(err_code), 'failed to init uploader: %s', err)
+      exit(err_code)
     end
-    local file_object, err_code
+    local file_object
     file_object, err_code, err = uploader:run()
     uploader:close()
     if not file_object then
-      local loglevel = err_code >= 500 and ngx_ERR or ngx_DEBUG
-      log(loglevel, err)
+      log(err_code_to_log_level(err_code), 'failed to upload: %s', err)
       exit(err_code)
     end
     local file_size = file_object.file_size

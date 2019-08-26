@@ -2,6 +2,8 @@ local tg = require('app.tg')
 local utils = require('app.utils')
 
 
+local ngx_HTTP_BAD_REQUEST = ngx.HTTP_BAD_REQUEST
+local ngx_HTTP_INTERNAL_SERVER_ERROR = ngx.HTTP_INTERNAL_SERVER_ERROR
 local yield = coroutine.yield
 
 local prepare_connection = tg.prepare_connection
@@ -45,14 +47,17 @@ _M.close = function(self)
   end
 end
 
-_M.upload = function(self, content_iterator)
-  -- upload_body_iterator: iterator function producing body chunks
+_M.upload = function(self, content)
+  -- params:
+  --    content: string or function -- body or iterator producing body chunks
   -- returns:
-  --  if ok: table -- TG API object (Document/Video/...) table
-  --  if error: nil, err
+  --    if ok: table -- TG API object (Document/Video/...)
+  --    if error: nil, err
   -- sets:
-  --  self.conn: http connection
-  --  self.bytes_uploaded: int (via upload_body_iterator)
+  --    self.conn: table -- http connection
+  --    self.error: string -- error message (if any)
+  --    self.error_code: integer -- http code (if error has occurred)
+  --    self.bytes_uploaded: int (via upload_body_coro)
   local conn, res, err
   conn, err = prepare_connection()
   if not conn then
@@ -61,7 +66,7 @@ _M.upload = function(self, content_iterator)
   self.conn = conn
   local upload_body_iterator = coroutine.wrap(self.upload_body_coro)
   -- pass function arguments in the first call (priming)
-  upload_body_iterator(self, content_iterator)
+  upload_body_iterator(self, content)
   local params = {
     path = '/bot%s/sendDocument',
     method = 'POST',
@@ -72,6 +77,10 @@ _M.upload = function(self, content_iterator)
     body = upload_body_iterator,
   }
   res, err = request_tg_server(conn, params, true)
+  -- upload_body_iterator sets self.error to indicate error while reading content from request
+  if self.error then
+    return nil, self.error
+  end
   if not res then
     return nil, format_error('tg api request error', err)
   end
@@ -94,9 +103,14 @@ _M.upload = function(self, content_iterator)
 end
 
 
-_M.upload_body_coro = function(self, content_iterator)
+_M.upload_body_coro = function(self, content)
+  -- params:
+  --    content: string or function -- body or iterator producing body chunks
   -- sets:
-  --   self.bytes_uploaded: number
+  --    self.bytes_uploaded: integer
+  --    self.error: string -- error message (if any)
+  --    self.error_code: integer -- http code (if error has occurred)
+  --
   -- send nothing on first call (iterator priming)
   yield(nil)
   local media_type = self.media_type
@@ -111,23 +125,45 @@ _M.upload_body_coro = function(self, content_iterator)
   yield_chunk(('content-disposition: form-data; name="document"; filename="%s"\r\n'):format(filename))
   yield_chunk(('content-type: %s\r\n\r\n'):format(media_type))
   local bytes_uploaded = 0
-  while true do
-    local chunk = content_iterator()
-    if not chunk then
-      break
+  if type(content) == 'function' then
+    while true do
+      local chunk, err = content()
+      if err then
+        self.set_error(format_error('content iterator error', err), ngx_HTTP_BAD_REQUEST)
+        break
+      end
+      if not chunk then
+        log('end of content')
+        break
+      end
+      yield_chunk(chunk)
+      bytes_uploaded = bytes_uploaded + #chunk
     end
-    yield_chunk(chunk)
-    bytes_uploaded = bytes_uploaded + #chunk
+  else
+    yield_chunk(content)
+    bytes_uploaded = #content
   end
   yield_chunk(('\r\n--%s--\r\n'):format(boundary))
   yield_chunk(nil)
   self.bytes_uploaded = bytes_uploaded
 end
 
-_M.set_media_type = function(self, media_type)
-  -- media_type: string or nil
+_M.set_error = function(self, error, error_code)
+  -- params:
+  --    error: string -- error message
+  --    error_code: integer or nil -- http code (optional)
   -- sets:
-  --  self.media_type
+  --    self.error: string -- error message as is
+  --    self.error_code: integer -- http code (500 if omitted)
+  self.error = error
+  self.error_code = error_code or ngx_HTTP_INTERNAL_SERVER_ERROR
+end
+
+_M.set_media_type = function(self, media_type)
+  -- params:
+  --    media_type: string or nil
+  -- sets:
+  --    self.media_type
   if self.upload_type == 'text' then
     media_type = 'text/plain'
   elseif not media_type then
@@ -135,11 +171,13 @@ _M.set_media_type = function(self, media_type)
   else
     media_type = normalize_media_type(media_type)
   end
-  log('media type: %s', media_type)
+  log('content media type: %s', media_type)
   self.media_type = media_type
 end
 
 _M.set_boundary = function(self)
+  -- sets:
+  --    self.boundary: string
   self.boundary = 'BNDR-' .. generate_random_hex_string(32)
 end
 

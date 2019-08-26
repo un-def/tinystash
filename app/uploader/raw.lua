@@ -9,7 +9,7 @@ local req_socket = ngx.req.socket
 
 local CHUNK_SIZE = constants.CHUNK_SIZE
 
-local log = utils.log
+local format_error = utils.format_error
 
 
 local FIELD_NAME_FILE = 'file'
@@ -26,13 +26,13 @@ _M.FIELD_NAME_CSRFTOKEN = FIELD_NAME_CSRFTOKEN
 _M.new = function(_, upload_type, chat_id, headers)
   local content_length = headers['content-length']
   if not content_length then
-    return nil, 'no content-length header'
+    return nil, ngx_HTTP_BAD_REQUEST, 'no content-length header'
   end
   content_length = tonumber(content_length)
   if not content_length then
-    return nil, 'invalid content-length header'
+    return nil, ngx_HTTP_BAD_REQUEST, 'invalid content-length header'
   elseif content_length <= 0 then
-    return nil, 'content-length header value <= 0'
+    return nil, ngx_HTTP_BAD_REQUEST, 'content-length header value <= 0'
   end
   local instance = setmetatable({
     upload_type = upload_type,
@@ -62,6 +62,7 @@ _M.run = function(self)
   local file_object
   file_object, err = self:upload(content_iterator)
   if not file_object then
+    self.set_error(err, self.error_code or ngx_HTTP_BAD_GATEWAY)
     return nil, ngx_HTTP_BAD_GATEWAY, err
   end
   return file_object
@@ -72,21 +73,18 @@ _M.get_content_iterator = function(self)
   local done = false
   return function()
     if done then
-      log('end of request body')
       return nil
     end
     local data, err, partial = sock:receive(CHUNK_SIZE)
     if data then
       return data
     elseif partial == '' then
-      log('end of request body')
       return nil
     elseif partial then
       done = true
       return partial
     else
-      log('read body error: %s', err)
-      return nil
+      return nil, format_error('socket error', err)
     end
   end
 end

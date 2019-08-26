@@ -6,7 +6,6 @@ local base_uploader = require('app.uploader.base')
 
 
 local ngx_null = ngx.null
-local ngx_ERR = ngx.ERR
 local ngx_HTTP_FORBIDDEN = ngx.HTTP_FORBIDDEN
 local ngx_HTTP_BAD_REQUEST = ngx.HTTP_BAD_REQUEST
 local ngx_HTTP_BAD_GATEWAY = ngx.HTTP_BAD_GATEWAY
@@ -36,7 +35,7 @@ _M.FIELD_NAME_CSRFTOKEN = FIELD_NAME_CSRFTOKEN
 _M.new = function(_, upload_type, chat_id, headers)
   local cookie = headers['cookie']
   if not cookie then
-    return nil, 'no cookie header'
+    return nil, ngx_HTTP_BAD_REQUEST, 'no cookie header'
   end
   local csrftoken
   for key, value in cookie:gmatch('([^%c%s;]+)=([^%c%s;]+)') do
@@ -46,11 +45,11 @@ _M.new = function(_, upload_type, chat_id, headers)
     end
   end
   if not csrftoken then
-    return nil, 'no csrftoken cookie'
+    return nil, ngx_HTTP_BAD_REQUEST, 'no csrftoken cookie'
   end
   local form, err = upload:new(CHUNK_SIZE)
   if not form then
-    return nil, err
+    return nil, ngx_HTTP_BAD_REQUEST, err
   end
   form:set_timeout(1000) -- 1 sec
   return setmetatable({
@@ -94,6 +93,10 @@ _M.run = function(self)
         self:set_boundary()
         local content_iterator = self:get_content_iterator(initial_data)
         file_object, err = self:upload(content_iterator)
+        if not file_object then
+          self.set_error(err, self.error_code or ngx_HTTP_BAD_GATEWAY)
+          return nil, ngx_HTTP_BAD_GATEWAY, err
+        end
         if not file_object then
           return nil, ngx_HTTP_BAD_GATEWAY, err
         end
@@ -155,15 +158,13 @@ _M.get_content_iterator = function(self, initial)
     end
     local token, data, err = form:read()
     if not token then
-      log(ngx_ERR, 'failed to read next form chunk: %s', err)
-      return nil
+      return nil, format_error('failed to read next form chunk', err)
     elseif token == 'body' then
       return data
     elseif token == 'part_end' then
       return nil
     else
-      log(ngx_ERR, 'unexpected token: %s', token)
-      return nil
+      return nil, format_error('unexpected token', token)
     end
   end
 end
