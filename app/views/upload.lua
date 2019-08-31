@@ -121,7 +121,17 @@ return {
 
     local render_link = render_link_factory(tiny_id)
     if app_id then
-      if headers['accept'] == 'application/json' then
+      local accept_json = false
+      local accept_header = headers['accept']
+      if type(accept_header) == 'string' then
+        for accept_media_type in accept_header:gmatch('[^, ]+') do
+          if accept_media_type == 'application/json' then
+            accept_json = true
+            break
+          end
+        end
+      end
+      if accept_json then
         ngx.header['content-type'] = 'application/json'
         ngx.print(json.encode{
           file_size = file_size,
