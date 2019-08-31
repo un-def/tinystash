@@ -29,6 +29,7 @@ local render = helpers.render
 
 local TG_MAX_FILE_SIZE = constants.TG_MAX_FILE_SIZE
 
+local FIELD_NAME_CONTENT = formdata_uploader.FIELD_NAME_CONTENT
 local FIELD_NAME_CSRFTOKEN = formdata_uploader.FIELD_NAME_CSRFTOKEN
 
 
@@ -60,6 +61,7 @@ return {
       upload_type = upload_type,
       csrftoken_name = FIELD_NAME_CSRFTOKEN,
       csrftoken_value = csrftoken,
+      content_name = FIELD_NAME_CONTENT,
     })
   end,
 
@@ -133,7 +135,7 @@ return {
         })
       else
         ngx.header['content-type'] = 'text/plain'
-        ngx_print(render_link('ln'))
+        ngx_print(render_link('dl'))
       end
     else
       ngx_redirect(render_link('ln'), ngx_HTTP_SEE_OTHER)

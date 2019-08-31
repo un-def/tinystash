@@ -3,7 +3,7 @@ local utils = require('app.utils')
 
 
 local ngx_HTTP_BAD_REQUEST = ngx.HTTP_BAD_REQUEST
-local ngx_HTTP_INTERNAL_SERVER_ERROR = ngx.HTTP_INTERNAL_SERVER_ERROR
+local ngx_HTTP_BAD_GATEWAY = ngx.HTTP_BAD_GATEWAY
 local yield = coroutine.yield
 
 local prepare_connection = tg.prepare_connection
@@ -34,10 +34,28 @@ local _M = {}
 _M.__index = _M
 
 _M.new = function()
+  -- params:
+  --    upload_type: string -- 'file' or 'text'
+  --    chat_id: integer
+  --    headers: table -- request headers
+  -- returns:
+  --    if ok: table -- uploader instance
+  --    if error: nil, error_code, error_text
+  -- sets:
+  --    ...
   not_implemented()
 end
 
 _M.run = function()
+  -- params:
+  --    none
+  -- returns:
+  --    if ok: TG API object (Document/Video/...) table with mandatory 'file_id' field
+  --    if error: nil, error_code, error_text
+  -- sets:
+  --    self.media_type: string
+  --    self.bytes_uploaded: integer
+  --    ...
   not_implemented()
 end
 
@@ -51,17 +69,15 @@ _M.upload = function(self, content)
   -- params:
   --    content: string or function -- body or iterator producing body chunks
   -- returns:
-  --    if ok: table -- TG API object (Document/Video/...)
-  --    if error: nil, err
+  --    if ok: TG API object (Document/Video/...) table with mandatory 'file_id' field
+  --    if error: nil, error_code, error_text
   -- sets:
   --    self.conn: table -- http connection
-  --    self.error: string -- error message (if any)
-  --    self.error_code: integer -- http code (if error has occurred)
   --    self.bytes_uploaded: int (via upload_body_coro)
   local conn, res, err
   conn, err = prepare_connection()
   if not conn then
-    return nil, err
+    return nil, ngx_HTTP_BAD_GATEWAY, err
   end
   self.conn = conn
   local upload_body_iterator = coroutine.wrap(self.upload_body_coro)
@@ -77,27 +93,28 @@ _M.upload = function(self, content)
     body = upload_body_iterator,
   }
   res, err = request_tg_server(conn, params, true)
-  -- upload_body_iterator sets self.error to indicate error while reading content from request
-  if self.error then
-    return nil, self.error
+  -- upload_body_iterator sets self._upload_body_coro_error to indicate error
+  -- while reading content from request
+  if self._upload_body_coro_error then
+    return nil, ngx_HTTP_BAD_REQUEST, self._upload_body_coro_error
   end
   if not res then
-    return nil, format_error('tg api request error', err)
+    return nil, ngx_HTTP_BAD_GATEWAY, format_error('tg api request error', err)
   end
   if not res.ok then
-    return nil, format_error('tg api response is not "ok"', res.description)
+    return nil, ngx_HTTP_BAD_GATEWAY, format_error('tg api response is not "ok"', res.description)
   end
   if not res.result then
-    return nil, 'tg api response has no "result"'
+    return nil, ngx_HTTP_BAD_GATEWAY, 'tg api response has no "result"'
   end
   local file
   file, err = get_file_from_message(res.result)
   if not file then
-    return nil, err
+    return nil, ngx_HTTP_BAD_GATEWAY, err
   end
   local file_object = file.object
   if not file_object.file_id then
-    return nil, 'tg api response has no file_id'
+    return nil, ngx_HTTP_BAD_GATEWAY, 'tg api response has no file_id'
   end
   return file_object
 end
@@ -108,8 +125,7 @@ _M.upload_body_coro = function(self, content)
   --    content: string or function -- body or iterator producing body chunks
   -- sets:
   --    self.bytes_uploaded: integer
-  --    self.error: string -- error message (if any)
-  --    self.error_code: integer -- http code (if error has occurred)
+  --    self._upload_body_coro_error: string -- error message (if any)
   --
   -- send nothing on first call (iterator priming)
   yield(nil)
@@ -129,7 +145,7 @@ _M.upload_body_coro = function(self, content)
     while true do
       local chunk, err = content()
       if err then
-        self.set_error(format_error('content iterator error', err), ngx_HTTP_BAD_REQUEST)
+        self._upload_body_coro_error = format_error('content iterator error', err)
         break
       end
       if not chunk then
@@ -146,17 +162,6 @@ _M.upload_body_coro = function(self, content)
   yield_chunk(('\r\n--%s--\r\n'):format(boundary))
   yield_chunk(nil)
   self.bytes_uploaded = bytes_uploaded
-end
-
-_M.set_error = function(self, error, error_code)
-  -- params:
-  --    error: string -- error message
-  --    error_code: integer or nil -- http code (optional)
-  -- sets:
-  --    self.error: string -- error message as is
-  --    self.error_code: integer -- http code (500 if omitted)
-  self.error = error
-  self.error_code = error_code or ngx_HTTP_INTERNAL_SERVER_ERROR
 end
 
 _M.set_media_type = function(self, media_type)

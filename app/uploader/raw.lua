@@ -12,18 +12,14 @@ local CHUNK_SIZE = constants.CHUNK_SIZE
 local format_error = utils.format_error
 
 
-local FIELD_NAME_FILE = 'file'
-local FIELD_NAME_CSRFTOKEN = 'csrftoken'
-
 
 local _M = setmetatable({}, base_uploader)
 
 _M.__index = _M
 
-_M.FIELD_NAME_FILE = FIELD_NAME_FILE
-_M.FIELD_NAME_CSRFTOKEN = FIELD_NAME_CSRFTOKEN
-
 _M.new = function(_, upload_type, chat_id, headers)
+  -- sets:
+  --    self.media_type: string (via set_media_type)
   local content_length = headers['content-length']
   if not content_length then
     return nil, ngx_HTTP_BAD_REQUEST, 'no content-length header'
@@ -44,14 +40,10 @@ _M.new = function(_, upload_type, chat_id, headers)
 end
 
 _M.run = function(self)
-  -- returns:
-  --   if ok: TG API object (Document/Video/...) table with mandatory 'file_id' field
-  --   if error: nil, error_code, error_text?
   -- sets:
-  --  self.media_type: string (via set_media_type)
-  --  self.boundary: string
-  --  self.conn: http connection (via upload)
-  --  self.bytes_uploaded: int (via upload)
+  --    self.bytes_uploaded: int (via upload)
+  --    self.boundary: string
+  --    self.conn: http connection (via upload)
   local sock, err = req_socket()
   if not sock then
     return nil, ngx_HTTP_BAD_REQUEST, err

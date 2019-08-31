@@ -8,7 +8,6 @@ local base_uploader = require('app.uploader.base')
 local ngx_null = ngx.null
 local ngx_HTTP_FORBIDDEN = ngx.HTTP_FORBIDDEN
 local ngx_HTTP_BAD_REQUEST = ngx.HTTP_BAD_REQUEST
-local ngx_HTTP_BAD_GATEWAY = ngx.HTTP_BAD_GATEWAY
 
 local log = utils.log
 local format_error = utils.format_error
@@ -16,7 +15,7 @@ local format_error = utils.format_error
 local CHUNK_SIZE = constants.CHUNK_SIZE
 
 
-local FIELD_NAME_FILE = 'file'
+local FIELD_NAME_CONTENT = 'content'
 local FIELD_NAME_CSRFTOKEN = 'csrftoken'
 
 
@@ -29,7 +28,7 @@ local _M = setmetatable({}, base_uploader)
 
 _M.__index = _M
 
-_M.FIELD_NAME_FILE = FIELD_NAME_FILE
+_M.FIELD_NAME_CONTENT = FIELD_NAME_CONTENT
 _M.FIELD_NAME_CSRFTOKEN = FIELD_NAME_CSRFTOKEN
 
 _M.new = function(_, upload_type, chat_id, headers)
@@ -61,16 +60,13 @@ _M.new = function(_, upload_type, chat_id, headers)
 end
 
 _M.run = function(self)
-  -- returns:
-  --   if ok: TG API object (Document/Video/...) table with mandatory 'file_id' field
-  --   if error: nil, error_code, error_text?
   -- sets:
-  --  self.media_type: string (via set_media_type)
-  --  self.boundary: string (via set_boundary)
-  --  self.conn: http connection (via upload)
-  --  self.bytes_uploaded: int (via upload)
-  local file_object, csrftoken
-  local res, err
+  --    self.media_type: string (via set_media_type)
+  --    self.bytes_uploaded: int (via upload)
+  --    self.boundary: string (via set_boundary)
+  --    self.conn: http connection (via upload)
+  local csrftoken, file_object
+  local res, err, err_code
   while true do
     res, err = self:handle_form_field()
     if not res then
@@ -85,20 +81,16 @@ _M.run = function(self)
         if csrftoken ~= self.csrftoken then
           return nil, ngx_HTTP_FORBIDDEN, 'invalid csrf token'
         end
-      elseif field_name == FIELD_NAME_FILE then
+      elseif field_name == FIELD_NAME_CONTENT then
         if initial_data:len() == 0 then
           return nil, ngx_HTTP_BAD_REQUEST, 'empty file'
         end
         self:set_media_type(media_type)
         self:set_boundary()
         local content_iterator = self:get_content_iterator(initial_data)
-        file_object, err = self:upload(content_iterator)
+        file_object, err_code, err = self:upload(content_iterator)
         if not file_object then
-          self.set_error(err, self.error_code or ngx_HTTP_BAD_GATEWAY)
-          return nil, ngx_HTTP_BAD_GATEWAY, err
-        end
-        if not file_object then
-          return nil, ngx_HTTP_BAD_GATEWAY, err
+          return nil, err_code, err
         end
       else
         return nil, ngx_HTTP_BAD_REQUEST, format_error('unexpected form field', field_name)
@@ -117,9 +109,9 @@ end
 
 _M.handle_form_field = function(self)
   -- returns:
-  --  if eof: ngx.null
-  --  if body (any): first chunk of body ("initial_data")
-  --  if error (any): nil, error_code, error_text?
+  --    if eof: ngx.null
+  --    if body (any): first chunk of body ("initial_data")
+  --    if error (any): nil, error_code, error_text?
   local form = self.form
   local field_name, media_type
   local token, data, err

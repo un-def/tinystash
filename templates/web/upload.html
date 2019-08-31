@@ -3,9 +3,9 @@
   <form method="post" enctype="multipart/form-data" class="upload-form{% if upload_type == 'text' then %} vertical{% end %}">
     <input type="hidden" name="{* csrftoken_name *}" value="{* csrftoken_value *}">
     {% if upload_type == 'file' then %}
-      <input type="file" name="file">
+      <input type="file" name="{* content_name *}">
     {% elseif upload_type == 'text' then %}
-      <textarea name="file"></textarea>
+      <textarea name="{* content_name *}"></textarea>
     {% end %}
     <input type="submit" value="Upload">
   </form>
