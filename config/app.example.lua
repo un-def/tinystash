@@ -33,5 +33,7 @@ return {
   link_url_prefix = 'https://example.com/',
   -- don't show download links in bot response if content-type is image/*
   hide_image_download_link = false,
+  -- enable direct file upload (e.g., via curl)
+  enable_upload_api = true,
 
 }

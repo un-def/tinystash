@@ -6,8 +6,7 @@ local constants = require('app.constants')
 local helpers = require('app.views.helpers')
 local formdata_uploader = require('app.uploader.formdata')
 local raw_uploader = require('app.uploader.raw')
-
-local tg_upload_chat_id = require('config.app').tg.upload_chat_id
+local config = require('config.app')
 
 
 local ngx_redirect = ngx.redirect
@@ -18,6 +17,9 @@ local ngx_ERR = ngx.ERR
 local ngx_HTTP_SEE_OTHER = ngx.HTTP_SEE_OTHER
 local ngx_HTTP_NOT_FOUND = ngx.HTTP_NOT_FOUND
 local ngx_HTTP_INTERNAL_SERVER_ERROR = ngx.HTTP_INTERNAL_SERVER_ERROR
+
+local tg_upload_chat_id = config.tg.upload_chat_id
+local enable_upload_api = config.enable_upload_api
 
 local log = utils.log
 local exit = utils.exit
@@ -69,7 +71,7 @@ return {
     local headers = ngx.req.get_headers()
     local uploader_type
     local app_id = headers['app-id']
-    if app_id then
+    if enable_upload_api and app_id then
       log('app_id: %s', app_id)
       uploader_type = raw_uploader
     else
@@ -134,9 +136,9 @@ return {
       if accept_json then
         ngx.header['content-type'] = 'application/json'
         ngx.print(json.encode{
+          id = tiny_id,
           file_size = file_size,
           media_type = media_type,
-          tiny_id = tiny_id,
           links = {
             inline = render_link('il'),
             download = render_link('dl'),
