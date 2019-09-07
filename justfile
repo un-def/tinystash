@@ -8,7 +8,7 @@ sudo +args:
 
 install-deps:
   #!/bin/sh
-  while read dep; do opm --cwd install "$dep"; done < requirements.opm
+  while read dep; do opm --cwd get "$dep"; done < requirements.opm
 
 run:
   /usr/local/openresty/nginx/sbin/nginx -c config/nginx.conf -p .

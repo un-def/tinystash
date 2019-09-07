@@ -18,7 +18,7 @@ See [instructions][openresty_installation] on [OpenResty website][openresty].
 #### Lua packages
 
 ```shell
-$ while read PNAME; do opm --cwd get $PNAME; done < requirements.opm
+$ while read dep; do opm --cwd get "$dep"; done < requirements.opm
 ```
 
 
