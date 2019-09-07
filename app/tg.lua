@@ -6,6 +6,7 @@ local config = require('config.app')
 
 local TG_API_HOST = constants.TG_API_HOST
 local TG_TYPES = constants.TG_TYPES
+local TG_TYPE_PHOTO = TG_TYPES.PHOTO
 local tg_token = config.tg.token
 local tg_request_timeout = config.tg.request_timeout * 1000
 
@@ -52,7 +53,7 @@ _M.get_file_from_message = function(message)
     file_obj = message[_file_obj_type]
     if file_obj then
       file_obj_type = _file_obj_type
-      if file_obj_type == TG_TYPES.PHOTO then
+      if file_obj_type == TG_TYPE_PHOTO then
         file_obj = file_obj[#file_obj]
       end
       return {

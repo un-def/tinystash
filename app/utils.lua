@@ -14,6 +14,7 @@ local ngx_HTTP_OK = ngx.HTTP_OK
 
 local TG_TYPES_MEDIA_TYPES_MAP = constants.TG_TYPES_MEDIA_TYPES_MAP
 local TG_TYPES_EXTENSIONS_MAP = constants.TG_TYPES_EXTENSIONS_MAP
+local TG_TYPE_STICKER = constants.TG_TYPES.STICKER
 local DEFAULT_TYPE_ID = mediatypes.DEFAULT_TYPE_ID
 local TYPE_ID_MAP = mediatypes.TYPE_ID_MAP
 local ID_TYPE_MAP = mediatypes.ID_TYPE_MAP
@@ -190,8 +191,18 @@ _M.guess_media_type = function(file_obj, file_obj_type)
     end
     return DEFAULT_TYPE_ID, nil
   end
-  -- guess by tg object type
-  media_type = TG_TYPES_MEDIA_TYPES_MAP[file_obj_type]
+  if file_obj_type == TG_TYPE_STICKER then
+    -- special case for stickers
+    if file_obj.is_animated then
+      -- tgs -> fallback to default media type, i.e., 'application/octet-stream'
+      media_type = nil
+    else
+      media_type = 'image/webp'
+    end
+  else
+    -- otherwise guess by tg object type
+    media_type = TG_TYPES_MEDIA_TYPES_MAP[file_obj_type]
+  end
   if media_type then
     return _M.get_media_type_id(media_type)
   end

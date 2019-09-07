@@ -25,7 +25,6 @@ _M.TG_TYPES_EXTENSIONS_MAP = {
   [VIDEO] = 'mp4',
   [VIDEO_NOTE] = 'mp4',
   [PHOTO] = 'jpg',
-  [STICKER] = 'webp',
 }
 
 _M.TG_TYPES_MEDIA_TYPES_MAP = {
@@ -33,7 +32,6 @@ _M.TG_TYPES_MEDIA_TYPES_MAP = {
   [VIDEO] = 'video/mp4',
   [VIDEO_NOTE] = 'video/mp4',
   [PHOTO] = 'image/jpeg',
-  [STICKER] = 'image/webp',
 }
 
 _M.TG_CHAT_PRIVATE = 'private'
