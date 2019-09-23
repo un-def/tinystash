@@ -1,4 +1,5 @@
 local upload = require('resty.upload')
+local parse_header = require('httoolsp').parse_header
 
 local utils = require('app.utils')
 local constants = require('app.constants')
@@ -17,11 +18,6 @@ local CHUNK_SIZE = constants.CHUNK_SIZE
 
 local FIELD_NAME_CONTENT = 'content'
 local FIELD_NAME_CSRFTOKEN = 'csrftoken'
-
-
-local get_form_field_name = function(content_disposition)
-  return content_disposition:match('[ ;]name="([^"]+)"')
-end
 
 
 local _M = setmetatable({}, base_uploader)
@@ -75,7 +71,7 @@ _M.run = function(self)
       log('end of form')
       break
     else
-      local field_name, media_type, initial_data = unpack(res)
+      local field_name, filename, media_type, initial_data = unpack(res)
       if field_name == FIELD_NAME_CSRFTOKEN then
         csrftoken = initial_data
         if csrftoken ~= self.csrftoken then
@@ -86,6 +82,7 @@ _M.run = function(self)
           return nil, ngx_HTTP_BAD_REQUEST, 'empty file'
         end
         self:set_media_type(media_type)
+        self:set_filename(self.media_type, filename)
         self:set_boundary()
         local content_iterator = self:get_content_iterator(initial_data)
         file_object, err_code, err = self:upload(content_iterator)
@@ -110,10 +107,10 @@ end
 _M.handle_form_field = function(self)
   -- returns:
   --    if eof: ngx.null
-  --    if body (any): first chunk of body ("initial_data")
+  --    if body (any): table {field_name, filename, media_type, initial_data}
   --    if error (any): nil, error_code, error_text?
   local form = self.form
-  local field_name, media_type
+  local field_name, filename, media_type
   local token, data, err
   while true do
     token, data, err = form:read()
@@ -131,10 +128,12 @@ _M.handle_form_field = function(self)
       if header == 'content-type' then
         media_type = value
       elseif header == 'content-disposition' then
-        field_name = get_form_field_name(value)
+        local _, field = parse_header(value)
+        field_name = field.name
+        filename = field.filename
       end
     elseif token == 'body' and field_name then
-      return {field_name, media_type, data}
+      return {field_name, filename, media_type, data}
     end
   end
 end

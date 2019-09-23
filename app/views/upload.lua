@@ -120,6 +120,7 @@ return {
       log(ngx_ERR, 'failed to encode tiny_id: %s', err)
       exit(ngx_HTTP_INTERNAL_SERVER_ERROR)
     end
+    log('tiny_id: %s', tiny_id)
 
     local render_link = render_link_factory(tiny_id)
     if app_id then

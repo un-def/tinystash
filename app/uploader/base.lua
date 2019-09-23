@@ -132,13 +132,11 @@ _M.upload_body_coro = function(self, content)
   local media_type = self.media_type
   local boundary = self.boundary
   local sep = ('--%s\r\n'):format(boundary)
-  local ext = guess_extension{media_type = media_type, exclude_dot = true} or 'bin'
-  local filename = ('%s.%s'):format(generate_random_hex_string(16), ext)
   yield_chunk(sep)
   yield_chunk('content-disposition: form-data; name="chat_id"\r\n\r\n')
   yield_chunk(('%s\r\n'):format(self.chat_id))
   yield_chunk(sep)
-  yield_chunk(('content-disposition: form-data; name="document"; filename="%s"\r\n'):format(filename))
+  yield_chunk(('content-disposition: form-data; name="document"; filename="%s"\r\n'):format(self.filename))
   yield_chunk(('content-type: %s\r\n\r\n'):format(media_type))
   local bytes_uploaded = 0
   if type(content) == 'function' then
@@ -178,6 +176,23 @@ _M.set_media_type = function(self, media_type)
   end
   log('content media type: %s', media_type)
   self.media_type = media_type
+end
+
+_M.set_filename = function(self, media_type, filename)
+  -- params:
+  --    media_type: string
+  --    filename: string or nil
+  -- sets:
+  --    self.filename
+  if not filename then
+    local ext = guess_extension{media_type = media_type, exclude_dot = true} or 'bin'
+    filename = ('%s.%s'):format(generate_random_hex_string(16), ext)
+    log('generated filename: %s', filename)
+  else
+    log('original filename: %s', filename)
+    filename = filename:gsub('[%s";\\]', '_')
+  end
+  self.filename = filename
 end
 
 _M.set_boundary = function(self)

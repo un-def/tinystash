@@ -36,6 +36,7 @@ _M.new = function(_, upload_type, chat_id, headers)
     expected_content_length = content_length,
   }, _M)
   instance:set_media_type(headers['content-type'])
+  instance:set_filename(instance.media_type)
   return instance
 end
 
