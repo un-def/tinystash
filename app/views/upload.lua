@@ -56,9 +56,14 @@ return {
   end,
 
   GET = function(upload_type)
+    local path = ngx.var.request_uri
+    local args_idx = path:find('?', 2, true)
+    if args_idx then
+      path = path:sub(1, args_idx - 1)
+    end
     local csrftoken = generate_random_hex_string(16)
-    ngx.header['set-cookie'] = (
-      '%s=%s; Path=/; HttpOnly; SameSite=Strict'):format(FIELD_NAME_CSRFTOKEN, csrftoken)
+    ngx.header['set-cookie'] = ('%s=%s; Path=%s; HttpOnly; SameSite=Strict'):format(
+      FIELD_NAME_CSRFTOKEN, csrftoken, path)
     render('web/upload.html', {
       upload_type = upload_type,
       csrftoken_name = FIELD_NAME_CSRFTOKEN,
