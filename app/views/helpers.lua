@@ -3,6 +3,8 @@ local template = require('resty.template')
 local config = require('config.app')
 
 
+local ngx_print = ngx.print
+
 local link_url_prefix = config.link_url_prefix:match('(.-)/*$')
 
 
@@ -30,7 +32,7 @@ end
 _M.render_to_string = render_to_string
 
 _M.render = function(template_path, context, plain)
-  ngx.print(render_to_string(template_path, context, plain))
+  ngx_print(render_to_string(template_path, context, plain))
 end
 
 return _M

@@ -1,7 +1,13 @@
+local json_encode = require('cjson.safe').encode
+
 local render_to_string = require('app.views.helpers').render_to_string
 
 
-local ngx_print = ngx.print
+local ngx_say = ngx.say
+local ngx_exit = ngx.exit
+local ngx_req = ngx.req
+local ngx_header = ngx.header
+local ngx_HTTP_OK = ngx.HTTP_OK
 
 
 local REASONS = {
@@ -19,19 +25,42 @@ local error_page_cache = {}
 
 
 local error_handler = function()
-  local status_code = ngx.status
-  local cached = error_page_cache[status_code]
-  if cached then
-    ngx_print(cached)
-    return
+  local args = ngx_req.get_uri_args()
+  local status = tonumber(args.status or ngx.status)
+  ngx.status = status
+  local description = args.description
+  local content_type = ngx_header['content-type']
+  if content_type == 'text/plain' then
+    ngx_say('ERROR: ', description or status)
+    return ngx_exit(ngx_HTTP_OK)
+  elseif content_type == 'application/json' then
+    ngx_say(json_encode{
+      error_code = status,
+      error_description = description,
+    })
+    return ngx_exit(ngx_HTTP_OK)
+  else
+    -- do not cache error pages with arbitrary descriptions
+    local cacheable = not description
+    if cacheable then
+      local cached = error_page_cache[status]
+      if cached then
+        ngx_say(cached)
+        return ngx_exit(ngx_HTTP_OK)
+      end
+    end
+    local content = render_to_string('web/error.html', {
+      title = status,
+      status = status,
+      reason = REASONS[status],
+      description = description,
+    })
+    if cacheable then
+      error_page_cache[status] = content
+    end
+    ngx_say(content)
+    return ngx_exit(ngx_HTTP_OK)
   end
-  local content = render_to_string('web/error.html', {
-    title = status_code,
-    status_code = status_code,
-    reason = REASONS[status_code],
-  })
-  error_page_cache[status_code] = content
-  ngx_print(content)
 end
 
 

@@ -255,6 +255,19 @@ footer {
 /* error page */
 
 .error-page {
-  font-size: 4rem;
   text-align: center;
+}
+
+.error-page .error {
+  font-size: 4rem;
+  padding: 1rem 0;
+}
+
+.error-page .error > span {
+  color: #777;
+}
+
+.error-page .description {
+  font-size: 1.5rem;
+  color: #555;
 }

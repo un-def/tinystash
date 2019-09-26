@@ -30,7 +30,8 @@ _M.FIELD_NAME_CSRFTOKEN = FIELD_NAME_CSRFTOKEN
 _M.new = function(_, upload_type, chat_id, headers)
   local cookie = headers['cookie']
   if not cookie then
-    return nil, ngx_HTTP_BAD_REQUEST, 'no cookie header'
+    log('no cookie header')
+    return nil, ngx_HTTP_BAD_REQUEST
   end
   local csrftoken
   for key, value in cookie:gmatch('([^%c%s;]+)=([^%c%s;]+)') do
@@ -40,11 +41,13 @@ _M.new = function(_, upload_type, chat_id, headers)
     end
   end
   if not csrftoken then
-    return nil, ngx_HTTP_BAD_REQUEST, 'no csrftoken cookie'
+    log('no csrftoken cookie')
+    return nil, ngx_HTTP_BAD_REQUEST
   end
   local form, err = upload:new(CHUNK_SIZE)
   if not form then
-    return nil, ngx_HTTP_BAD_REQUEST, err
+    log('resty.upload:new() error: %s', err)
+    return nil, ngx_HTTP_BAD_REQUEST
   end
   form:set_timeout(1000) -- 1 sec
   return setmetatable({
@@ -66,7 +69,8 @@ _M.run = function(self)
   while true do
     res, err = self:handle_form_field()
     if not res then
-      return nil, ngx_HTTP_BAD_REQUEST, err
+      log('handle_form_field() error: %s', err)
+      return nil, ngx_HTTP_BAD_REQUEST
     elseif res == ngx_null then
       log('end of form')
       break
@@ -75,7 +79,8 @@ _M.run = function(self)
       if field_name == FIELD_NAME_CSRFTOKEN then
         csrftoken = initial_data
         if csrftoken ~= self.csrftoken then
-          return nil, ngx_HTTP_FORBIDDEN, 'invalid csrf token'
+          log('invalid csrf token')
+          return nil, ngx_HTTP_FORBIDDEN
         end
       elseif field_name == FIELD_NAME_CONTENT then
         if initial_data:len() == 0 then
@@ -85,21 +90,25 @@ _M.run = function(self)
         self:set_filename(self.media_type, filename)
         self:set_boundary()
         local content_iterator = self:get_content_iterator(initial_data)
-        file_object, err_code, err = self:upload(content_iterator)
+        file_object, err_code = self:upload(content_iterator)
         if not file_object then
-          return nil, err_code, err
+          return nil, err_code
         end
       else
-        return nil, ngx_HTTP_BAD_REQUEST, format_error('unexpected form field', field_name)
+        log('unexpected form field: %s', filename)
+        return nil, ngx_HTTP_BAD_REQUEST
       end
     end
   end
   if not csrftoken then
-    return nil, ngx_HTTP_FORBIDDEN, 'no csrf token'
+    log('no csrf token')
+    return nil, ngx_HTTP_FORBIDDEN
   elseif csrftoken ~= self.csrftoken then
-    return nil, ngx_HTTP_FORBIDDEN, 'invalid csrf token'
+    log('invalid csrf token')
+    return nil, ngx_HTTP_FORBIDDEN
   elseif not file_object then
-    return nil, ngx_HTTP_BAD_REQUEST, 'no file'
+    log('no content')
+    return nil, ngx_HTTP_BAD_REQUEST
   end
   return file_object
 end

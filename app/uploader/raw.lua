@@ -2,15 +2,19 @@ local constants = require('app.constants')
 local utils = require('app.utils')
 local base_uploader = require('app.uploader.base')
 
-
-local ngx_HTTP_BAD_REQUEST = ngx.HTTP_BAD_REQUEST
 local req_socket = ngx.req.socket
+local ngx_HTTP_BAD_REQUEST = ngx.HTTP_BAD_REQUEST
+local ngx_ERR = ngx.ERR
 
 local CHUNK_SIZE = constants.CHUNK_SIZE
 local DOWNSTREAM_TIMEOUT = constants.DOWNSTREAM_TIMEOUT
 local TG_MAX_FILE_SIZE = constants.TG_MAX_FILE_SIZE
 
+local log = utils.log
 local format_error = utils.format_error
+
+local maximum_file_size_err = (
+  'declared content-length is too big - maximum file size is %s'):format(TG_MAX_FILE_SIZE)
 
 
 local _M = setmetatable({}, base_uploader)
@@ -28,9 +32,9 @@ _M.new = function(_, upload_type, chat_id, headers)
   if not content_length then
     return nil, ngx_HTTP_BAD_REQUEST, 'invalid content-length header'
   elseif content_length <= 0 then
-    return nil, ngx_HTTP_BAD_REQUEST, 'content-length header value <= 0'
+    return nil, ngx_HTTP_BAD_REQUEST, 'content-length header value is 0'
   elseif content_length > TG_MAX_FILE_SIZE then
-    return nil, 413, 'declared content-length is too big for getFile API method'
+    return nil, 413, maximum_file_size_err
   end
   local instance = setmetatable({
     upload_type = upload_type,
@@ -49,19 +53,20 @@ _M.run = function(self)
   --    self.conn: http connection (via upload)
   local sock, err = req_socket()
   if not sock then
-    return nil, ngx_HTTP_BAD_REQUEST, err
+    log(ngx_ERR, 'downstream socket error: %s', err)
+    return nil, ngx_HTTP_BAD_REQUEST
   end
   sock:settimeout(DOWNSTREAM_TIMEOUT)
   self.request_socket = sock
   self:set_boundary()
   local content_iterator = self:get_content_iterator()
   local file_object, err_code
-  file_object, err_code, err = self:upload(content_iterator)
+  file_object, err_code = self:upload(content_iterator)
   if not file_object then
-    return nil, err_code, err
+    return nil, err_code
   end
   if self.bytes_uploaded ~= self.expected_content_length then
-    err = ('incorrect content-length: declared %s, uploaded %s'):format(
+    err = ('incorrect content-length - declared %s, uploaded %s'):format(
       self.expected_content_length, self.bytes_uploaded)
     return nil, ngx_HTTP_BAD_REQUEST, err
   end

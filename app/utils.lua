@@ -7,10 +7,8 @@ local mediatypes = require('app.mediatypes')
 
 
 local debug_getinfo = debug.getinfo
-local ngx_exit = ngx.exit
-local ngx_print = ngx.print
+local ngx_exec = ngx.exec
 local ngx_DEBUG = ngx.DEBUG
-local ngx_HTTP_OK = ngx.HTTP_OK
 
 local TG_TYPES_MEDIA_TYPES_MAP = constants.TG_TYPES_MEDIA_TYPES_MAP
 local TG_TYPES_EXTENSIONS_MAP = constants.TG_TYPES_EXTENSIONS_MAP
@@ -56,12 +54,8 @@ _M.log = function(...)
   raw_log(level, message)
 end
 
-_M.exit = function(status, ...)
-  if select('#', ...) == 0 then ngx_exit(status) end
-  ngx.status = status
-  ngx.header['content-type'] = 'text/plain'
-  ngx_print(...)
-  ngx_exit(ngx_HTTP_OK)
+_M.error = function(status, description)
+  return ngx_exec('/error', {status = status, description = description})
 end
 
 _M.format_error = function(preamble, error)

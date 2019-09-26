@@ -1,4 +1,4 @@
-local json = require('cjson.safe')
+local json_encode = require('cjson.safe').encode
 
 local tinyid = require('app.tinyid')
 local utils = require('app.utils')
@@ -11,6 +11,10 @@ local config = require('config.app')
 
 local ngx_redirect = ngx.redirect
 local ngx_print = ngx.print
+local ngx_say = ngx.say
+local ngx_req = ngx.req
+local ngx_var = ngx.var
+local ngx_header = ngx.header
 local ngx_DEBUG = ngx.DEBUG
 local ngx_WARN = ngx.WARN
 local ngx_ERR = ngx.ERR
@@ -22,7 +26,7 @@ local tg_upload_chat_id = config.tg.upload_chat_id
 local enable_upload_api = config.enable_upload_api
 
 local log = utils.log
-local exit = utils.exit
+local error = utils.error
 local generate_random_hex_string = utils.generate_random_hex_string
 local parse_media_type = utils.parse_media_type
 local get_media_type_id = utils.get_media_type_id
@@ -47,7 +51,7 @@ return {
 
   initial = function(upload_type)
     if not tg_upload_chat_id then
-      exit(ngx_HTTP_NOT_FOUND)
+      return error(ngx_HTTP_NOT_FOUND)
     end
     if upload_type == '' then
       upload_type = 'file'
@@ -56,13 +60,16 @@ return {
   end,
 
   GET = function(upload_type)
-    local path = ngx.var.request_uri
+    local path = ngx_var.request_uri
     local args_idx = path:find('?', 2, true)
     if args_idx then
       path = path:sub(1, args_idx - 1)
     end
+    if path:sub(-1, -1) == '/' then
+      path = path:sub(1, -2)
+    end
     local csrftoken = generate_random_hex_string(16)
-    ngx.header['set-cookie'] = ('%s=%s; Path=%s; HttpOnly; SameSite=Strict'):format(
+    ngx_header['set-cookie'] = ('%s=%s; Path=%s; HttpOnly; SameSite=Strict'):format(
       FIELD_NAME_CSRFTOKEN, csrftoken, path)
     render('web/upload.html', {
       upload_type = upload_type,
@@ -73,26 +80,47 @@ return {
   end,
 
   POST = function(upload_type)
-    local headers = ngx.req.get_headers()
-    local uploader_type
+    local headers = ngx_req.get_headers()
     local app_id = headers['app-id']
+    local direct_upload_json = false
+    local direct_upload_plain = false
     if enable_upload_api and app_id then
       log('app_id: %s', app_id)
+      local accept_header = headers['accept']
+      if type(accept_header) == 'string' then
+        for accept_media_type in accept_header:gmatch('[^, ]+') do
+          if accept_media_type == 'application/json' then
+            direct_upload_json = true
+            break
+          end
+        end
+      end
+      if direct_upload_json then
+        ngx_header['content-type'] = 'application/json'
+      else
+        direct_upload_plain = true
+        ngx_header['content-type'] = 'text/plain'
+      end
+    end
+
+    local uploader_type
+    if direct_upload_json or direct_upload_plain then
       uploader_type = raw_uploader
     else
       uploader_type = formdata_uploader
     end
+
     local uploader, err_code, err = uploader_type:new(upload_type, tg_upload_chat_id, headers)
     if not uploader then
-      log(err_code_to_log_level(err_code), 'failed to init uploader: %s', err)
-      exit(err_code)
+      log(err_code_to_log_level(err_code), 'uploader.new() error: %s: %s', err_code, err)
+      return error(err_code, err)
     end
     local file_object
     file_object, err_code, err = uploader:run()
     uploader:close()
     if not file_object then
-      log(err_code_to_log_level(err_code), 'failed to upload: %s', err)
-      exit(err_code)
+      log(err_code_to_log_level(err_code), 'uploader.run() error: %s: %s', err_code, err)
+      return error(err_code, err)
     end
     local file_size = file_object.file_size
     local bytes_uploaded = uploader.bytes_uploaded
@@ -104,7 +132,7 @@ return {
     end
     if (file_size or bytes_uploaded) > TG_MAX_FILE_SIZE then
       log('file is too big for getFile API method, return error to client')
-      exit(413)
+      return error(413, 'the file is too big')
     end
 
     local media_type = uploader.media_type
@@ -123,40 +151,26 @@ return {
     }
     if not tiny_id then
       log(ngx_ERR, 'failed to encode tiny_id: %s', err)
-      exit(ngx_HTTP_INTERNAL_SERVER_ERROR)
+      return error(ngx_HTTP_INTERNAL_SERVER_ERROR)
     end
     log('tiny_id: %s', tiny_id)
 
     local render_link = render_link_factory(tiny_id)
-    if app_id then
-      local accept_json = false
-      local accept_header = headers['accept']
-      if type(accept_header) == 'string' then
-        for accept_media_type in accept_header:gmatch('[^, ]+') do
-          if accept_media_type == 'application/json' then
-            accept_json = true
-            break
-          end
-        end
-      end
-      if accept_json then
-        ngx.header['content-type'] = 'application/json'
-        ngx.print(json.encode{
-          id = tiny_id,
-          file_size = file_size,
-          media_type = media_type,
-          links = {
-            inline = render_link('il'),
-            download = render_link('dl'),
-            links_page = render_link('ln'),
-          },
-        })
-      else
-        ngx.header['content-type'] = 'text/plain'
-        ngx_print(render_link('dl'))
-      end
+    if direct_upload_json then
+      ngx_print(json_encode{
+        id = tiny_id,
+        file_size = file_size,
+        media_type = media_type,
+        links = {
+          inline = render_link('il'),
+          download = render_link('dl'),
+          links_page = render_link('ln'),
+        },
+      })
+    elseif direct_upload_plain then
+      ngx_say(render_link('dl'))
     else
-      ngx_redirect(render_link('ln'), ngx_HTTP_SEE_OTHER)
+      return ngx_redirect(render_link('ln'), ngx_HTTP_SEE_OTHER)
     end
   end
 

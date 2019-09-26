@@ -1,18 +1,24 @@
-local exit = require('app.utils').exit
+local error = require('app.utils').error
 local render_to_string = require('app.views.helpers').render_to_string
+
+
+local ngx_print = ngx.print
+local ngx_header = ngx.header
+local ngx_req = ngx.req
+local ngx_HTTP_NOT_ALLOWED = ngx.HTTP_NOT_ALLOWED
 
 
 local template_handler_meta = {
   __call = function(self)
     if self.content then
-      ngx.print(self.content)
+      ngx_print(self.content)
       return
     end
     local content = render_to_string(self.template, self.context)
     if self.cache then
       self.content = content
     end
-    ngx.print(content)
+    ngx_print(content)
   end
 }
 
@@ -29,7 +35,7 @@ local template_handler = function(params)
   end
   local content_type = params.content_type
   if content_type then
-    ngx.header['content-type'] = content_type
+    ngx_header['content-type'] = content_type
   end
   return setmetatable({
     template = params[1],
@@ -47,10 +53,10 @@ local view_meta = {
     else
       args = {...}
     end
-    local method = ngx.req.get_method()
+    local method = ngx_req.get_method()
     local handler = self[method]
     if not handler then
-      exit(ngx.HTTP_NOT_ALLOWED)
+      return error(ngx_HTTP_NOT_ALLOWED)
     else
       handler(unpack(args))
     end

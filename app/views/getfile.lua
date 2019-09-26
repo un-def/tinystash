@@ -6,6 +6,7 @@ local helpers = require('app.views.helpers')
 
 
 local ngx_print = ngx.print
+local ngx_header = ngx.header
 local ngx_INFO = ngx.INFO
 local ngx_ERR = ngx.ERR
 local ngx_HTTP_OK = ngx.HTTP_OK
@@ -13,7 +14,7 @@ local ngx_HTTP_NOT_FOUND = ngx.HTTP_NOT_FOUND
 local ngx_HTTP_BAD_GATEWAY = ngx.HTTP_BAD_GATEWAY
 
 local log = utils.log
-local exit = utils.exit
+local error = utils.error
 local escape_uri = utils.escape_uri
 local guess_extension = utils.guess_extension
 local parse_media_type = utils.parse_media_type
@@ -37,14 +38,14 @@ return {
     local tiny_id_params, tiny_id_err = tinyid.decode(tiny_id)
     if not tiny_id_params then
       log(ngx_INFO, 'tiny_id decode error: %s', tiny_id_err)
-      exit(ngx_HTTP_NOT_FOUND)
+      return error(ngx_HTTP_NOT_FOUND)
     end
 
     local conn, res, err, params
     conn, err = prepare_connection()
     if not conn then
-      log(ngx_ERR, 'tg api request error: %s', err)
-      exit(ngx_HTTP_BAD_GATEWAY)
+      log(ngx_ERR, 'tg api connection error: %s', err)
+      return error(ngx_HTTP_BAD_GATEWAY)
     end
 
     -- get file info
@@ -55,11 +56,11 @@ return {
     res, err = request_tg_server(conn, params, true)
     if not res then
       log(ngx_ERR, 'tg api request error: %s', err)
-      exit(ngx_HTTP_BAD_GATEWAY)
+      return error(ngx_HTTP_BAD_GATEWAY)
     end
     if not res.ok then
       log(ngx_INFO, 'tg api response is not "ok": %s', res.description)
-      exit(ngx_HTTP_NOT_FOUND)
+      return error(ngx_HTTP_NOT_FOUND)
     end
 
     local file_path = res.result.file_path
@@ -100,12 +101,12 @@ return {
     if not res then
       log(ngx_ERR, 'tg file storage request error: %s', err)
       conn:set_keepalive()
-      exit(ngx_HTTP_BAD_GATEWAY)
+      return error(ngx_HTTP_BAD_GATEWAY)
     end
     if res.status ~= ngx_HTTP_OK then
       log(ngx_ERR, 'tg file storage response status %s != 200', res.status)
       conn:set_keepalive()
-      exit(ngx_HTTP_NOT_FOUND)
+      return error(ngx_HTTP_NOT_FOUND)
     end
 
     if not file_name or #file_name < 1 then
@@ -122,10 +123,10 @@ return {
     if parse_media_type(media_type)[1] == 'text' then
       content_type = content_type .. '; charset=utf-8'
     end
-    ngx.header['content-type'] = content_type
-    ngx.header['content-disposition'] = ("%s; filename*=utf-8''%s"):format(
+    ngx_header['content-type'] = content_type
+    ngx_header['content-disposition'] = ("%s; filename*=utf-8''%s"):format(
       content_disposition, escape_uri(file_name, true))
-    ngx.header['content-length'] = file_size
+    ngx_header['content-length'] = file_size
 
     local chunk
     while true do
