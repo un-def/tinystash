@@ -1,6 +1,6 @@
 local aes = require('resty.aes')
 
-local aes_params = require('config.app').aes
+local aes_params = require('config').aes
 
 
 local hash = aes_params.hash and aes.hash[aes_params.hash]

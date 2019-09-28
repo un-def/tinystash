@@ -51,6 +51,7 @@ http {
       io.stdout:write('\n')
       io.stdout:flush()
     end
+    _G.TINYSTASH_DIR='$TINYSTASH_DIR'
     ngx.timer.at(0, function()
       local chunk, ok, err
       chunk, err = loadfile('$TINYSTASH_DIR/scripts/$SCRIPT_NAME.lua')

@@ -3,8 +3,8 @@ logs/
 resty_modules/
 nginx.pid
 
-/config/nginx.conf
-/config/app.lua
+/nginx.conf
+/config.lua
 
 *.sh
 !/tinysta.sh

@@ -4,10 +4,11 @@ RUN apk add --no-cache curl perl
 COPY requirements.opm /tmp/requirements.opm
 RUN while read dep; do opm --cwd get "$dep"; done < /tmp/requirements.opm
 COPY app/ app/
-COPY scripts/ scripts/
 COPY static/ static/
 COPY templates/ templates/
+COPY scripts/ scripts/
 COPY tinysta.sh tinysta.sh
+COPY nginx.conf.tpl nginx.conf.tpl
 
 FROM openresty/openresty:alpine
 WORKDIR /opt/tinystash/

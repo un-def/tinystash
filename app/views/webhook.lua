@@ -6,7 +6,7 @@ local constants = require('app.constants')
 local helpers = require('app.views.helpers')
 local get_file_from_message = require('app.tg').get_file_from_message
 
-local config = require('config.app')
+local config = require('config')
 
 
 local ngx_say = ngx.say

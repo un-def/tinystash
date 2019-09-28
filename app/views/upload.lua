@@ -6,7 +6,7 @@ local constants = require('app.constants')
 local helpers = require('app.views.helpers')
 local formdata_uploader = require('app.uploader.formdata')
 local raw_uploader = require('app.uploader.raw')
-local config = require('config.app')
+local config = require('config')
 
 
 local ngx_redirect = ngx.redirect

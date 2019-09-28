@@ -1,51 +1,40 @@
 daemon off;
-worker_processes 4;
+worker_processes {* worker_processes *};
 pid nginx.pid;
 
-### log everything to stderr
-error_log stderr debug;
-
-### uncomment the next line to log error messages to a file
-# error_log logs/error.log error;
+{% for _, line in ipairs(error_log) do %}
+error_log {* line *};
+{% end %}
 
 events {
-  worker_connections 1024;
+  worker_connections {* worker_connections *};
 }
 
 http {
   server_tokens off;
 
-  resolver 8.8.8.8 ipv6=off;
-  lua_ssl_trusted_certificate /etc/ssl/certs/ca-certificates.crt;
-  lua_ssl_verify_depth 5;
+  resolver {* resolver *};
+  lua_ssl_trusted_certificate {* lua_ssl_trusted_certificate *};
+  lua_ssl_verify_depth {* lua_ssl_verify_depth *};
 
   lua_package_path "$prefix/resty_modules/lualib/?.lua;$prefix/resty_modules/lualib/?/init.lua;$prefix/?.lua;$prefix/?/init.lua;;";
   lua_package_cpath "$prefix/resty_modules/lualib/?.so;;";
 
   init_by_lua_block {
     require('resty.core')
-    --- uncomment to enable lua-resty-http debug logging
-    -- require('resty.http').debug(true)
+    {% if resty_http_debug_logging then %}
+    require('resty.http').debug(true)
+    {% end %}
     collectgarbage('collect')
   }
 
   server {
-    ### set to >= 1024 while running as unprivileged user
-    listen 80;
-
-    ### access log is disabled; set file path to enable
-    access_log off;
-
-    ### set to 'off' in development mode
-    lua_code_cache on;
-
+    listen {* listen *};
+    access_log {* access_log *};
+    lua_code_cache {* lua_code_cache *};
     default_type text/html;
-
-    # 20 MiB getFile API method limit + 10% (multipart/form-data overhead)
-    client_max_body_size 22M;
-
+    client_max_body_size {* client_max_body_size *};
     error_page 400 403 404 405 413 500 502 /error;
-
     set $template_root templates;
 
     location = / {

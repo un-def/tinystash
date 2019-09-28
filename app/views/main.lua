@@ -1,4 +1,4 @@
-local tg_bot_username = require('config.app').tg.bot_username
+local tg_bot_username = require('config').tg.bot_username
 
 
 return {

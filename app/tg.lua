@@ -2,7 +2,7 @@ local http = require('resty.http')
 local json = require('cjson.safe')
 
 local constants = require('app.constants')
-local config = require('config.app')
+local config = require('config')
 
 local TG_API_HOST = constants.TG_API_HOST
 local TG_TYPES = constants.TG_TYPES
