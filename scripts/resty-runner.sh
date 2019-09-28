@@ -35,6 +35,7 @@ daemon off;
 master_process off;
 worker_processes 1;
 pid logs/nginx.pid;
+env TINYSTASH_CONFIG_PATH;
 error_log stderr warn;
 events {
   worker_connections 64;

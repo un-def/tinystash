@@ -1,6 +1,6 @@
 local compile_template = require('resty.template').compile
 
-local config = require('config').nginx_conf
+local config = require('app.config').nginx_conf
 
 local NUMBER = type(1)
 local STRING = type('')

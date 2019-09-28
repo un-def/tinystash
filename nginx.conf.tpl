@@ -10,6 +10,8 @@ events {
   worker_connections {* worker_connections *};
 }
 
+env TINYSTASH_CONFIG_PATH;
+
 http {
   server_tokens off;
 

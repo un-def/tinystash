@@ -1,6 +1,6 @@
 local template = require('resty.template')
 
-local config = require('config')
+local config = require('app.config')
 
 
 local ngx_print = ngx.print

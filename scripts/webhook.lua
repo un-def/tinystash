@@ -1,7 +1,7 @@
 local http = require('resty.http')
 local json = require('cjson.safe')
 
-local config = require('config')
+local config = require('app.config')
 local tg = config.tg
 
 
