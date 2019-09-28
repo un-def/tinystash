@@ -3,7 +3,9 @@ logs/
 resty_modules/
 nginx.pid
 
-config/nginx.conf
-config/app.lua
+/config/nginx.conf
+/config/app.lua
 
 *.sh
+!/tinysta.sh
+!/scripts/resty-runner.sh

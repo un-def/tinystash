@@ -2,8 +2,11 @@
 
 # inspired by resty-cli -- https://github.com/openresty/resty-cli
 
-TINYSTASH_DIR=$(dirname $(dirname $(readlink -f "$0")))
-SCRIPT_NAME=$(basename "$0")
+[ "$#" -ge 1 ] || exit 1
+
+TINYSTASH_DIR=$(dirname "$(dirname "$(readlink -f "$0")")")
+SCRIPT_NAME=$1
+shift
 
 TEMP_DIR=$(mktemp -d)
 
@@ -18,7 +21,7 @@ mkdir "$TEMP_DIR/logs"
 CONF="$TEMP_DIR/nginx.conf"
 
 make_arg() {
-  echo "arg = {"
+  echo "_G.arg = {"
   while [ $# -ne 0 ]
   do
     echo "      [===[$1]===],"
@@ -43,7 +46,7 @@ http {
   lua_package_cpath "$TINYSTASH_DIR/resty_modules/lualib/?.so;;";
   init_worker_by_lua_block {
     $(make_arg "$@")
-    print = function(...)
+    _G.print = function(...)
       io.stdout:write(table.concat({...}))
       io.stdout:write('\n')
       io.stdout:flush()

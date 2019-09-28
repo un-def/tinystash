@@ -11,7 +11,7 @@ install-deps:
   while read dep; do opm --cwd get "$dep"; done < requirements.opm
 
 run:
-  /usr/local/openresty/nginx/sbin/nginx -c config/nginx.conf -p .
+  ./tinysta.sh run
 
 docker recipe +args='':
   @just docker-{{recipe}} {{args}}
