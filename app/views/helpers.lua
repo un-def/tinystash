@@ -7,6 +7,7 @@ local ngx_print = ngx.print
 
 local link_url_prefix = config._processed.link_url_prefix
 local enable_upload = config._processed.enable_upload
+local enable_upload_api = config._processed.enable_upload_api
 
 
 local _M = {}
@@ -22,6 +23,7 @@ local render_to_string = function(template_path, context, plain)
   local full_context = {
     link_url_prefix = link_url_prefix,
     enable_upload = enable_upload,
+    enable_upload_api = enable_upload_api,
   }
   if type(context) == 'table' then
     for k, v in pairs(context) do

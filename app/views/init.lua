@@ -89,8 +89,9 @@ end
 
 return {
   main = view('app.views.main'),
-  getfile = view('app.views.getfile'),
+  get_file = view('app.views.get-file'),
   webhook = view('app.views.webhook'),
   upload = view('app.views.upload'),
+  docs_api = view('app.views.docs-api'),
   error = require('app.views.error').error_handler,
 }

@@ -12,6 +12,9 @@
       </div>
       {% if enable_upload then %}
         <nav>
+          {% if enable_upload_api then %}
+            [ <a href="{* link_url_prefix *}/docs/api">docs/api</a> ]
+          {% end %}
           [ <a href="{* link_url_prefix *}/upload/text">upload text</a> ]
           [ <a href="{* link_url_prefix *}/upload">upload file</a> ]
         </nav>

@@ -51,9 +51,15 @@ http {
       include /usr/local/openresty/nginx/conf/mime.types;
     }
 
+    location ~ ^/docs/api/?$ {
+      content_by_lua_block {
+        require('app.views').docs_api()
+      }
+    }
+
     location ~ ^/(?P<mode>dl|il|ln)/(?P<tiny_id>[a-zA-Z0-9]+)(?:\.[a-zA-Z0-9]+|/(?P<file_name>[^\\/]+))?/?$ {
       content_by_lua_block {
-        require('app.views').getfile(ngx.var.tiny_id, ngx.var.mode, ngx.var.file_name)
+        require('app.views').get_file(ngx.var.tiny_id, ngx.var.mode, ngx.var.file_name)
       }
     }
 

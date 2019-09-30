@@ -74,7 +74,9 @@ $ docker exec -it tinystash scripts/webhook set
 
 Source code is licensed under the [MIT License][license].
 
-Source Sans Pro font is licensed under the [SIL Open Font License, Version 1.1][license-font].
+Source Sans Pro font is licensed under the [SIL Open Font License, Version 1.1][license-font-sourcesanspro].
+
+Source Code Pro font is licensed under the [SIL Open Font License, Version 1.1][license-font-sourcecodepro].
 
 
 
@@ -84,4 +86,5 @@ Source Sans Pro font is licensed under the [SIL Open Font License, Version 1.1][
 [openresty_installation]: https://openresty.org/en/installation.html
 [tinystash_bot]: https://t.me/tinystash_bot
 [license]: https://github.com/un-def/tinystash/blob/master/LICENSE
-[license-font]: https://github.com/un-def/tinystash/blob/master/static/OFL.txt
+[license-font-sourcesanspro]: https://github.com/un-def/tinystash/blob/master/static/OFL-SourceSansPro.txt
+[license-font-sourcecodepro]: https://github.com/un-def/tinystash/blob/master/static/OFL-SourceCodePro.txt
