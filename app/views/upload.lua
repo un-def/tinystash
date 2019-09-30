@@ -22,8 +22,9 @@ local ngx_HTTP_SEE_OTHER = ngx.HTTP_SEE_OTHER
 local ngx_HTTP_NOT_FOUND = ngx.HTTP_NOT_FOUND
 local ngx_HTTP_INTERNAL_SERVER_ERROR = ngx.HTTP_INTERNAL_SERVER_ERROR
 
+local enable_upload = config._processed.enable_upload
+local enable_upload_api = config._processed.enable_upload_api
 local tg_upload_chat_id = config.tg.upload_chat_id
-local enable_upload_api = config.enable_upload_api
 
 local log = utils.log
 local error = utils.error
@@ -50,7 +51,7 @@ end
 return {
 
   initial = function(upload_type)
-    if not tg_upload_chat_id then
+    if not enable_upload then
       return error(ngx_HTTP_NOT_FOUND)
     end
     if upload_type == '' then

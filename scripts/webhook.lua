@@ -2,7 +2,8 @@ local http = require('resty.http')
 local json = require('cjson.safe')
 
 local config = require('app.config')
-local tg = config.tg
+local token = config.tg.token
+local secret = config._processed.tg_webhook_secret
 
 
 local assume_yes = false
@@ -13,7 +14,7 @@ local die = function(...)
   os.exit(1)
 end
 
-if not tg or not tg.token then
+if not token then
   die('Bad config: set tg.token')
 end
 
@@ -78,7 +79,7 @@ local api_call = function(method, params)
     die('TG API request error: ', err)
   end
   httpc:set_timeout(10000)
-  local uri = ('https://api.telegram.org/bot%s/%s'):format(tg.token, method)
+  local uri = ('https://api.telegram.org/bot%s/%s'):format(token, method)
   res, err = httpc:request_uri(uri, {
     query = params,
     ssl_verify = false,
@@ -121,7 +122,6 @@ Set 'link_url_prefix' in config or pass prefix as command line argument]])
     end
     url_prefix = ('%s/webhook'):format(link_url_prefix:match('(.-)/*$'))
   end
-  local secret = tg.webhook_secret or tg.token
   local url = ('%s/%s'):format(url_prefix:match('(.-)/*$'), secret)
   print('Set webhook to ', url)
   ask()

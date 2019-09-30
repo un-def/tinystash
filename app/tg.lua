@@ -8,7 +8,7 @@ local TG_API_HOST = constants.TG_API_HOST
 local TG_TYPES = constants.TG_TYPES
 local TG_TYPE_PHOTO = TG_TYPES.PHOTO
 local tg_token = config.tg.token
-local tg_request_timeout = config.tg.request_timeout * 1000
+local tg_request_timeout_ms = config.tg.request_timeout * 1000
 
 
 local _M = {}
@@ -18,7 +18,7 @@ _M.prepare_connection = function()
   if not conn then
     return nil, err
   end
-  conn:set_timeout(tg_request_timeout)
+  conn:set_timeout(tg_request_timeout_ms)
   return conn
 end
 

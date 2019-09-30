@@ -5,7 +5,7 @@ local config = require('app.config')
 
 local ngx_print = ngx.print
 
-local link_url_prefix = config.link_url_prefix:match('(.-)/*$')
+local link_url_prefix = config._processed.link_url_prefix
 
 
 local _M = {}

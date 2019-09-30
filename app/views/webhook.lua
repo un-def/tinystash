@@ -26,12 +26,11 @@ local TG_CHAT_PRIVATE = constants.TG_CHAT_PRIVATE
 local TG_MAX_FILE_SIZE = constants.TG_MAX_FILE_SIZE
 local GET_FILE_MODES = constants.GET_FILE_MODES
 
-local tg_token = config.tg.token
 local tg_bot_username = config.tg.bot_username
-local tg_webhook_secret = config.tg.webhook_secret or tg_token
+local tg_webhook_secret = config._processed.tg_webhook_secret
 local hide_image_download_link = config.hide_image_download_link
 
-local link_url_prefix = helpers.link_url_prefix
+local link_url_prefix = config._processed.link_url_prefix
 local render_link_factory = helpers.render_link_factory
 local render_to_string = helpers.render_to_string
 
