@@ -31,6 +31,7 @@ local tg_webhook_secret = config._processed.tg_webhook_secret
 local hide_image_download_link = config.hide_image_download_link
 
 local link_url_prefix = config._processed.link_url_prefix
+local enable_upload = config._processed.enable_upload
 local render_link_factory = helpers.render_link_factory
 local render_to_string = helpers.render_to_string
 
@@ -84,6 +85,7 @@ return {
       end
       return send_webhook_response(message, 'bot/ok-help.txt', {
         link_url_prefix = link_url_prefix,
+        enable_upload = enable_upload,
       })
     end
 

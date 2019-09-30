@@ -4,9 +4,11 @@
     <p><strong>tiny[stash]</strong> is the easiest way<sup>[citation&nbsp;needed]</sup> to share files from <a href="https://telegram.org/">Telegram</a> to the public internet.</p>
     <p>Just send anything<sup>1,2</sup> to <a href="https://t.me/{* bot_username *}">@{{ bot_username }}</a> Telegram bot and get public HTTP link.</p>
   </div>
-  <div class="info">
-    <p>You can also upload any<sup>1</sup> <a href="{* link_url_prefix *}/upload">file</a> or <a href="{* link_url_prefix *}/upload/text">text</a> directly with your browser.</p>
-  </div>
+  {% if enable_upload then %}
+    <div class="info">
+      <p>You can also upload any<sup>1</sup> <a href="{* link_url_prefix *}/upload">file</a> or <a href="{* link_url_prefix *}/upload/text">text</a> directly with your browser.</p>
+    </div>
+  {% end %}
   <div class="footnote">
     <p><sup>1</sup> {( includes/max_file_size.txt )}</p>
     <p><sup>2</sup> {( includes/supported_types.txt )}</p>

@@ -10,10 +10,12 @@
       <div class="logo">
         <a href="{* link_url_prefix *}/"><sup>tiny</sup>[stash]</a>
       </div>
-      <nav>
-        [ <a href="{* link_url_prefix *}/upload/text">upload text</a> ]
-        [ <a href="{* link_url_prefix *}/upload">upload file</a> ]
-      </nav>
+      {% if enable_upload then %}
+        <nav>
+          [ <a href="{* link_url_prefix *}/upload/text">upload text</a> ]
+          [ <a href="{* link_url_prefix *}/upload">upload file</a> ]
+        </nav>
+      {% end %}
     </header>
     <div class="content">
       {* view *}
