@@ -39,16 +39,21 @@ http {
     error_page 400 403 404 405 411 413 500 501 502 /error;
     set $template_root templates;
 
-    location = / {
-      content_by_lua_block {
-        require('app.views').main()
-      }
-    }
-
     location /static/ {
       alias ./static/;
       try_files $uri =404;
       include /usr/local/openresty/nginx/conf/mime.types;
+    }
+
+    location = /favicon.ico {
+      alias ./static/favicon.ico;
+      default_type image/vnd.microsoft.icon;
+    }
+
+    location = / {
+      content_by_lua_block {
+        require('app.views').main()
+      }
     }
 
     location ~ ^/docs/api/?$ {
