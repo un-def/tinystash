@@ -36,7 +36,7 @@ http {
     lua_code_cache {* lua_code_cache *};
     default_type text/html;
     client_max_body_size {* client_max_body_size *};
-    error_page 400 403 404 405 413 500 502 /error;
+    error_page 400 403 404 405 411 413 500 501 502 /error;
     set $template_root templates;
 
     location = / {

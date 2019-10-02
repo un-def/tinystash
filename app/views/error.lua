@@ -16,7 +16,9 @@ local REASONS = {
   [404] = 'Not Found',
   [405] = 'Method Not Allowed',
   [413] = 'Payload Too Large',
+  [411] = 'Length Required',
   [500] = 'Internal Server Error',
+  [501] = 'Not Implemented',
   [502] = 'Bad Gateway',
 }
 

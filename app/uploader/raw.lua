@@ -24,9 +24,17 @@ _M.__index = _M
 _M.new = function(_, upload_type, chat_id, headers)
   -- sets:
   --    self.media_type: string (via set_media_type)
+  local transfer_encoding = headers['transfer-encoding']
+  if transfer_encoding ~= nil then
+    -- nginx will terminate a request early with 501 Not Implemented
+    -- if transfer-encoding is not supported or if the client sends
+    -- invalid chunks (for chunked encoding), therefore,
+    -- this check is never actually performed
+    return nil, 501, transfer_encoding .. ' is not supported'
+  end
   local content_length = headers['content-length']
   if not content_length then
-    return nil, ngx_HTTP_BAD_REQUEST, 'no content-length header'
+    return nil, 411, 'no content-length header'
   end
   content_length = tonumber(content_length)
   if not content_length then
