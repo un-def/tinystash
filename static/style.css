@@ -140,6 +140,7 @@ header a:hover, header a:focus {
 header .logo {
   font-size: 1.5rem;
   padding-bottom: 0.2rem;
+  white-space: nowrap;
 }
 
 header .logo sup {
@@ -149,7 +150,15 @@ header .logo sup {
 }
 
 header nav {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   padding-bottom: 0.2em;
+}
+
+header nav span {
+  white-space: nowrap;
 }
 
 .content {
