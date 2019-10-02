@@ -11,6 +11,15 @@
 
 /* latin */
 @font-face {
+  font-family: 'Source Sans Pro';
+  font-style: italic;
+  font-weight: 400;
+  src: local('Source Sans Pro Italic'), local('SourceSansPro-Italic'), url('sourcesanspro-italic.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/* latin */
+@font-face {
   font-family: 'Source Code Pro';
   font-style: normal;
   font-weight: 400;
@@ -38,6 +47,55 @@ a {
 a:hover, a:focus {
   color: #23527c;
   text-decoration: underline;
+}
+
+h1 {
+  font-size: 3rem;
+  margin: 1rem 0;
+}
+
+h2 {
+  font-size: 2.2rem;
+  margin: 1.12rem 0;
+}
+
+h3 {
+  font-size: 1.76rem;
+  margin: 1.25rem 0;
+}
+
+h4 {
+  font-size: 1.5rem;
+  margin: 1.5rem 0;
+}
+
+h5 {
+  font-size: 1.25rem;
+  margin: 2.25rem 0;
+}
+
+h6 {
+  font-size: 1.12rem;
+  margin: 2.5rem 0;
+}
+
+code {
+  font-family: 'Source Code Pro', monospace;
+  font-size: .8em;
+  padding: 1px 2px;
+  vertical-align: middle;
+  color: #555;
+  background-color: #fcfcfc;
+  border: 1px solid #e0e0e0;
+}
+
+.codeblock {
+  font-family: 'Source Code Pro', monospace;
+  padding: 0 1em;
+  color: #555;
+  background-color: #fcfcfc;
+  border: 1px solid #e0e0e0;
+  white-space: pre-line;
 }
 
 .container {
@@ -132,10 +190,20 @@ footer {
 
 /*** docs page ***/
 
-.docs-page .wip {
-  text-align: center;
-  font-size: 4rem;
-  font-family: 'Source Code Pro', monospace;
+.docs-page {
+  margin: 1rem 0 3rem 0;
+}
+
+@media screen and (min-width: 900px) {
+  .docs-page {
+    width: 800px;
+  }
+}
+
+.docs-page p {
+  font-size: 1.2rem;
+  line-height: 1.8rem;
+  margin-bottom: .3rem;
 }
 
 /*** file links page ***/
