@@ -25,7 +25,7 @@ docker-save tag:
 docker-load filename:
   docker load --input {{filename}}
 
-docker-run tag='latest' port='8880' +args='':
+docker-run tag='latest' port='8880' +args=('-v ' + invocation_directory() + '/config.lua:/opt/tinystash/config.lua'):
   docker run \
     -d --restart unless-stopped \
     --log-driver journald \
