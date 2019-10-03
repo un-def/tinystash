@@ -115,12 +115,7 @@ if cmd == 'get' then
 elseif cmd == 'set' then
   local url_prefix = arguments[2]
   if not url_prefix then
-    local link_url_prefix = config.link_url_prefix
-    if not link_url_prefix then
-      die([[Webhook URL prefix not specified
-Set 'link_url_prefix' in config or pass prefix as command line argument]])
-    end
-    url_prefix = ('%s/webhook'):format(link_url_prefix:match('(.-)/*$'))
+    url_prefix = ('%s/webhook'):format(config._processed.link_url_prefix)
   end
   local url = ('%s/%s'):format(url_prefix:match('(.-)/*$'), secret)
   print('Set webhook to ', url)

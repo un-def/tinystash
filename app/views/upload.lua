@@ -25,6 +25,7 @@ local ngx_HTTP_INTERNAL_SERVER_ERROR = ngx.HTTP_INTERNAL_SERVER_ERROR
 local enable_upload = config._processed.enable_upload
 local enable_upload_api = config._processed.enable_upload_api
 local tg_upload_chat_id = config.tg.upload_chat_id
+local url_path_prefix = config._processed.url_path_prefix
 
 local log = utils.log
 local error = utils.error
@@ -70,8 +71,8 @@ return {
       path = path:sub(1, -2)
     end
     local csrftoken = generate_random_hex_string(16)
-    ngx_header['set-cookie'] = ('%s=%s; Path=%s; HttpOnly; SameSite=Strict'):format(
-      FIELD_NAME_CSRFTOKEN, csrftoken, path)
+    ngx_header['set-cookie'] = ('%s=%s; Path=%s%s; HttpOnly; SameSite=Strict'):format(
+      FIELD_NAME_CSRFTOKEN, csrftoken, url_path_prefix, path)
     render('web/upload.html', {
       upload_type = upload_type,
       csrftoken_name = FIELD_NAME_CSRFTOKEN,

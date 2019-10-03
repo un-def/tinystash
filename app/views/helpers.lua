@@ -6,6 +6,7 @@ local config = require('app.config')
 local ngx_print = ngx.print
 
 local link_url_prefix = config._processed.link_url_prefix
+local url_path_prefix = config._processed.url_path_prefix
 local enable_upload = config._processed.enable_upload
 local enable_upload_api = config._processed.enable_upload_api
 
@@ -22,6 +23,7 @@ end
 local render_to_string = function(template_path, context, plain)
   local full_context = {
     link_url_prefix = link_url_prefix,
+    url_path_prefix = url_path_prefix,
     enable_upload = enable_upload,
     enable_upload_api = enable_upload_api,
   }

@@ -2,22 +2,22 @@
 <html lang="en">
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link href="{* link_url_prefix *}/static/style.css" rel="stylesheet">
-  <link rel="icon" href="{* link_url_prefix *}/static/favicon.png" type="image/png">
+  <link href="{* url_path_prefix *}/static/style.css" rel="stylesheet">
+  <link rel="icon" href="{* url_path_prefix *}/static/favicon.png" type="image/png">
   <title>{% if title then %}{{ title }}{* ' &mdash; ' *}{% end %}[tiny]stash</title>
 <body>
   <div class="container">
     <header>
       <div class="logo">
-        <a href="{* link_url_prefix *}/"><sup>tiny</sup>[stash]</a>
+        <a href="{* url_path_prefix *}/"><sup>tiny</sup>[stash]</a>
       </div>
       {% if enable_upload then %}
         <nav>
           {% if enable_upload_api then %}
-            <span>[ <a href="{* link_url_prefix *}/docs/api">docs/api</a> ]</span>
+            <span>[ <a href="{* url_path_prefix *}/docs/api">docs/api</a> ]</span>
           {% end %}
-          <span>[ <a href="{* link_url_prefix *}/upload/text">upload text</a> ]</span>
-          <span>[ <a href="{* link_url_prefix *}/upload">upload file</a> ]</span>
+          <span>[ <a href="{* url_path_prefix *}/upload/text">upload text</a> ]</span>
+          <span>[ <a href="{* url_path_prefix *}/upload">upload file</a> ]</span>
         </nav>
       {% end %}
     </header>

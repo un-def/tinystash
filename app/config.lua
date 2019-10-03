@@ -8,8 +8,22 @@ config._processed = _processed
 
 local config_tg = config.tg
 
+local link_url_prefix = config.link_url_prefix:match('(.-)/*$')
+
+
+local _, url_path_start = link_url_prefix:find('^https?://[^/]+')
+local url_path_prefix
+if url_path_start then
+  url_path_prefix = link_url_prefix:sub(url_path_start + 1)
+else
+  url_path_prefix = ''
+end
+
 -- config.link_url_prefix without trailing slash(es)
-_processed.link_url_prefix = config.link_url_prefix:match('(.-)/*$')
+_processed.link_url_prefix = link_url_prefix
+-- path component of link_url_prefix without trailing slash(es) (include single slash,
+-- i.e. 'http://example.com/' -> '', 'http://example.com/path/to/' -> '/path/to')
+_processed.url_path_prefix = url_path_prefix
 -- enable upload (both via html form and via direct upload api)
 _processed.enable_upload = config_tg.upload_chat_id ~= nil
 -- config.enable_upload_api corrected accordind to config._processed.enable_upload
