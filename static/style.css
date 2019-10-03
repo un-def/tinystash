@@ -113,11 +113,11 @@ code {
 }
 
 .container > :nth-child(2) {
-  flex: 1;
+  flex: 1 1 auto;
 }
 
 .container > :nth-child(3) {
-  flex: 0 0 2.2rem;
+  flex: 0 0 auto;
 }
 
 header {
@@ -171,13 +171,24 @@ header nav span {
 }
 
 footer {
-  border-top: 1px #eee solid;
-  width: 95%;
+  background-color: #fafafa;
+  width: 100%;
   color: #777;
   display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
   align-items: center;
-  justify-content: center;
+  justify-content: space-evenly;
   font-size: 0.8rem;
+  padding-top: 5px;
+}
+
+footer .row {
+  padding-bottom: 5px;
+}
+
+footer .row .bull::before {
+  content: "•";
 }
 
 /*** main page ***/
@@ -345,7 +356,7 @@ footer {
 
 .upload-page .upload-form input[type="file"] {
   width: 20rem;
-  max-width: 80vw;
+  max-width: 70vw;
   background: #fafafa;
   margin-right: .2rem;
 }
