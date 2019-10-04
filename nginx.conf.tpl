@@ -96,6 +96,10 @@ http {
       }
     }
 
+    header_filter_by_lua_block {
+      require('app.phases.header_filter').deny_page_framing()
+    }
+
   }
 
 }
