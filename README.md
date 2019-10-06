@@ -6,7 +6,7 @@
 
 A storage-less, database-less, \_\_\_\_\_\_\_\_-less filesharing. Send anything to [@tinystash_bot][tinystash_bot] [Telegram][telegram] bot. Get an opaque http link. Share it.
 
-Written in [Lua][lua]. Powered by [OpenResty][openresty].
+Written in [Lua][lua]. Powered by [LuaJIT][luajit] and [OpenResty][openresty].
 
 
 ### Installing
@@ -24,49 +24,45 @@ $ while read dep; do opm --cwd get "$dep"; done < requirements.opm
 
 ### Configuring
 
-Copy app and nginx configs from examples and edit them:
-
 ```shell
-$ cp config/app.example.lua config/app.lua
-$ cp config/nginx.example.conf config/nginx.conf
+$ cp config.example.lua config.lua
+$ vi config.lua
 ```
 
 
 ### Setting up Telegram bot webhook
 
 ```shell
-$ scripts/webhook set
+$ ./tinysta.sh webhook set
 ```
 
 
 ### Running
 
 ```shell
-$ /usr/local/openresty/nginx/sbin/nginx -c config/nginx.conf -p .
+$ ./tinysta.sh run
 ```
 
 
 ### Quick deployment with Docker
 
-1. Prepare `config` directory with `nginx.conf` and `app.lua` configs.
+1. Prepare `config.lua` as described above.
 
-2. Run Docker container:
+2. Set up Telegram bot webhook :
+```shell
+$ docker run --rm -it \
+    -v /path/to/config.lua:/opt/tinystash/config.lua \
+    un1def/tinystash webhook set
+```
+
+3. Run Docker container:
 ```shell
 $ docker run -d \
     --restart unless-stopped \
-    # Mount config directory from step 1
-    -v /path/to/config:/opt/tinystash/config \
-    # Optional: mount logs directory if you have configured log file(s) in nginx.conf
-    -v /var/log/tinystash:/opt/tinystash/logs \
-    # host:container port mapping
+    -v /path/to/config.lua:/opt/tinystash/config.lua \
     -p 80:80 \
     --name tinystash \
     un1def/tinystash
-```
-
-3. Set up Telegram bot webhook (Docker container must be started):
-```shell
-$ docker exec -it tinystash scripts/webhook set
 ```
 
 
@@ -82,6 +78,7 @@ Source Code Pro font is licensed under the [SIL Open Font License, Version 1.1][
 
 [telegram]: http://telegram.org/
 [lua]: https://lua.org/
+[luajit]: https://luajit.org/
 [openresty]: https://openresty.org/
 [openresty_installation]: https://openresty.org/en/installation.html
 [tinystash_bot]: https://t.me/tinystash_bot
