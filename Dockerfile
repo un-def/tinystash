@@ -21,4 +21,4 @@ ENTRYPOINT ["./tinysta.sh"]
 CMD ["run"]
 
 LABEL maintainer="un.def <me@undef.im>"
-LABEL version="2.0.0"
+LABEL version="2.1.0"
