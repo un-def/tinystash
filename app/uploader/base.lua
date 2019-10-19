@@ -14,6 +14,7 @@ local get_file_from_message = tg.get_file_from_message
 
 local log = utils.log
 local guess_extension = utils.guess_extension
+local split_ext = utils.split_ext
 local normalize_media_type = utils.normalize_media_type
 local generate_random_hex_string = utils.generate_random_hex_string
 
@@ -143,13 +144,21 @@ _M.upload_body_coro = function(self, content)
   -- send nothing on first call (iterator priming)
   yield(nil)
   local media_type = self.media_type
+  local filename = self.filename
+  -- avoid automatic gif -> mp4 conversion by tricking Telegram
+  if media_type == 'image/gif' then
+    -- replace actual content type with generic one
+    media_type = 'application/octet-stream'
+    -- remove filename extension (image.gif -> image)
+    filename = split_ext(filename)
+  end
   local boundary = self.boundary
   local sep = ('--%s\r\n'):format(boundary)
   yield_chunk(sep)
   yield_chunk('content-disposition: form-data; name="chat_id"\r\n\r\n')
   yield_chunk(('%s\r\n'):format(self.chat_id))
   yield_chunk(sep)
-  yield_chunk(('content-disposition: form-data; name="document"; filename="%s"\r\n'):format(self.filename))
+  yield_chunk(('content-disposition: form-data; name="document"; filename="%s"\r\n'):format(filename))
   yield_chunk(('content-type: %s\r\n\r\n'):format(media_type))
   local bytes_uploaded = 0
   if type(content) == 'function' then
