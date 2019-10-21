@@ -33,10 +33,7 @@ local template_handler = function(params)
   if cache == nil then
     cache = true
   end
-  local content_type = params.content_type
-  if content_type then
-    ngx_header['content-type'] = content_type
-  end
+  ngx_header['content-type'] = params.content_type or 'text/html'
   return setmetatable({
     template = params[1],
     context = params[2],
@@ -59,6 +56,9 @@ local view_meta = {
       return error(ngx_HTTP_NOT_ALLOWED)
     else
       handler(unpack(args))
+      if not ngx_header['content-type'] then
+        ngx_header['content-type'] = 'text/html'
+      end
     end
   end
 }
