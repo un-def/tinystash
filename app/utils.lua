@@ -92,13 +92,35 @@ _M.escape_uri = function(uri, escape_slashes)
   return uri:gsub('[^/]+', ngx.escape_uri)
 end
 
-_M.split_ext = function(path, exclude_dot)
+local split_ext = function(path, exclude_dot)
   local root, ext = path:match('(.*[^/]+)%.([^./]+)$')
   root = root or path
   if ext and not exclude_dot then
     ext = '.' .. ext
   end
   return root, ext
+end
+
+_M.split_ext = split_ext
+
+_M.escape_ext = function(filename)
+  local root, ext = split_ext(filename)
+  if not ext then
+    ext = ''
+  elseif ext:lower() == '.gif' then
+    ext = '._if'
+  end
+  return root .. ext
+end
+
+_M.unescape_ext = function(filename)
+  local root, ext = split_ext(filename)
+  if not ext then
+    ext = ''
+  elseif ext == '._if' then
+    ext = '.gif'
+  end
+  return root .. ext
 end
 
 _M.get_substring = function(str, start, length, blank_to_nil)

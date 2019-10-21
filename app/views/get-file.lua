@@ -16,6 +16,7 @@ local ngx_HTTP_BAD_GATEWAY = ngx.HTTP_BAD_GATEWAY
 local log = utils.log
 local error = utils.error
 local escape_uri = utils.escape_uri
+local unescape_ext = utils.unescape_ext
 local guess_extension = utils.guess_extension
 local parse_media_type = utils.parse_media_type
 
@@ -72,7 +73,7 @@ return {
       extension = '.' .. TG_TYPES_EXTENSIONS_MAP[TG_TYPES.VOICE]
     else
       extension = guess_extension{
-        file_name = file_path,
+        file_name = unescape_ext(file_path),
         media_type = media_type,
       }
     end

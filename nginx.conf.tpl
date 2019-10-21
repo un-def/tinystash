@@ -62,7 +62,7 @@ http {
       }
     }
 
-    location ~ ^/(?P<mode>dl|il|ln)/(?P<tiny_id>[a-zA-Z0-9]+)(?:\.[a-zA-Z0-9]+|/(?P<file_name>[^\\/]+))?/?$ {
+    location ~ ^/(?P<mode>dl|il|ln)/(?P<tiny_id>[a-zA-Z0-9]+)(?:\.[a-zA-Z0-9_.]+|/(?P<file_name>[^\\/]+))?/?$ {
       content_by_lua_block {
         require('app.views').get_file(ngx.var.tiny_id, ngx.var.mode, ngx.var.file_name)
       }
