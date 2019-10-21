@@ -32,9 +32,7 @@ local error_handler = function()
   ngx.status = status
   local description = args.description
   local content_type = ngx_header['content-type']
-  if not content_type then
-    ngx_header['content-type'] = 'text/html'
-  elseif content_type == 'text/plain' then
+  if content_type == 'text/plain' then
     ngx_say('ERROR: ', description or status)
     return ngx_exit(ngx_HTTP_OK)
   elseif content_type == 'application/json' then
@@ -44,6 +42,9 @@ local error_handler = function()
     })
     return ngx_exit(ngx_HTTP_OK)
   else
+    if not content_type then
+      ngx_header['content-type'] = 'text/html'
+    end
     -- do not cache error pages with arbitrary descriptions
     local cacheable = not description
     if cacheable then
