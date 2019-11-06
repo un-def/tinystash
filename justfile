@@ -10,6 +10,9 @@ install-deps:
   #!/bin/sh
   while read dep; do opm --cwd get "$dep"; done < requirements.opm
 
+lint:
+  luacheck .
+
 run:
   ./tinysta.sh run
 

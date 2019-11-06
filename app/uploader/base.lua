@@ -14,7 +14,6 @@ local get_file_from_message = tg.get_file_from_message
 
 local log = utils.log
 local guess_extension = utils.guess_extension
-local split_ext = utils.split_ext
 local escape_ext = utils.escape_ext
 local normalize_media_type = utils.normalize_media_type
 local generate_random_hex_string = utils.generate_random_hex_string
