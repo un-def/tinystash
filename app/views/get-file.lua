@@ -7,6 +7,7 @@ local helpers = require('app.views.helpers')
 
 local ngx_print = ngx.print
 local ngx_header = ngx.header
+local ngx_req = ngx.req
 local ngx_INFO = ngx.INFO
 local ngx_ERR = ngx.ERR
 local ngx_HTTP_OK = ngx.HTTP_OK
@@ -120,8 +121,24 @@ return {
       content_disposition = 'inline'
     end
 
-    local content_type = media_type
-    if parse_media_type(media_type)[1] == 'text' then
+    local content_type, media_type_table
+    local query = ngx_req.get_uri_args()
+    local overridden_media_type = query.mt
+    if type(overridden_media_type) == 'string' then
+      media_type_table, err = parse_media_type(overridden_media_type)
+      if not media_type_table then
+        log(ngx_INFO, 'invalid overridden media type: %s, error: %s', overridden_media_type, err)
+      else
+        content_type = overridden_media_type
+      end
+    end
+    if not content_type then
+      content_type = media_type
+    end
+    if not media_type_table then
+      media_type_table = parse_media_type(media_type)
+    end
+    if media_type_table[1] == 'text' then
       content_type = content_type .. '; charset=utf-8'
     end
     ngx_header['content-type'] = content_type
