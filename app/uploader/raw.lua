@@ -8,13 +8,13 @@ local ngx_ERR = ngx.ERR
 
 local CHUNK_SIZE = constants.CHUNK_SIZE
 local DOWNSTREAM_TIMEOUT = constants.DOWNSTREAM_TIMEOUT
-local TG_MAX_FILE_SIZE = constants.TG_MAX_FILE_SIZE
 
 local log = utils.log
 local format_error = utils.format_error
 
 local maximum_file_size_err = (
-  'declared content-length is too big - maximum file size is %s'):format(TG_MAX_FILE_SIZE)
+  'declared content-length is too big - maximum file size is %s'
+):format(base_uploader.MAX_FILE_SIZE)
 
 
 local _M = setmetatable({}, base_uploader)
@@ -41,7 +41,7 @@ _M.new = function(_, upload_type, chat_id, headers)
     return nil, ngx_HTTP_BAD_REQUEST, 'invalid content-length header'
   elseif content_length <= 0 then
     return nil, ngx_HTTP_BAD_REQUEST, 'content-length header value is 0'
-  elseif content_length > TG_MAX_FILE_SIZE then
+  elseif base_uploader:is_max_file_size_exceeded(content_length) then
     return nil, 413, maximum_file_size_err
   end
   local instance = setmetatable({

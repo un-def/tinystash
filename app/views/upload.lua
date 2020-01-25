@@ -2,7 +2,6 @@ local json_encode = require('cjson.safe').encode
 
 local tinyid = require('app.tinyid')
 local utils = require('app.utils')
-local constants = require('app.constants')
 local helpers = require('app.views.helpers')
 local formdata_uploader = require('app.uploader.formdata')
 local raw_uploader = require('app.uploader.raw')
@@ -34,8 +33,6 @@ local parse_media_type = utils.parse_media_type
 local get_media_type_id = utils.get_media_type_id
 local render_link_factory = helpers.render_link_factory
 local render = helpers.render
-
-local TG_MAX_FILE_SIZE = constants.TG_MAX_FILE_SIZE
 
 local FIELD_NAME_CONTENT = formdata_uploader.FIELD_NAME_CONTENT
 local FIELD_NAME_CSRFTOKEN = formdata_uploader.FIELD_NAME_CSRFTOKEN
@@ -132,7 +129,7 @@ return {
     else
       log('bytes uploaded: %s', bytes_uploaded)
     end
-    if (file_size or bytes_uploaded) > TG_MAX_FILE_SIZE then
+    if uploader:is_max_file_size_exceeded(file_size or bytes_uploaded) then
       log('file is too big for getFile API method, return error to client')
       return error(413, 'the file is too big')
     end

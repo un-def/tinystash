@@ -1,5 +1,6 @@
 local tg = require('app.tg')
 local utils = require('app.utils')
+local constants = require('app.constants')
 
 
 local ngx_HTTP_BAD_REQUEST = ngx.HTTP_BAD_REQUEST
@@ -34,6 +35,8 @@ end
 local _M = {}
 
 _M.__index = _M
+
+_M.MAX_FILE_SIZE = constants.TG_MAX_FILE_SIZE
 
 _M.new = function()
   -- params:
@@ -133,7 +136,6 @@ _M.upload = function(self, content)
   return file_object
 end
 
-
 _M.upload_body_coro = function(self, content)
   -- params:
   --    content: string or function -- body or iterator producing body chunks
@@ -171,6 +173,10 @@ _M.upload_body_coro = function(self, content)
       end
       yield_chunk(chunk)
       bytes_uploaded = bytes_uploaded + #chunk
+      if self:is_max_file_size_exceeded(bytes_uploaded) then
+        log(ngx_INFO, 'content iterator produced more bytes than MAX_FILE_SIZE, breaking consuming')
+        break
+      end
     end
   else
     yield_chunk(content)
@@ -179,6 +185,10 @@ _M.upload_body_coro = function(self, content)
   yield_chunk(('\r\n--%s--\r\n'):format(boundary))
   yield_chunk(nil)
   self.bytes_uploaded = bytes_uploaded
+end
+
+_M.is_max_file_size_exceeded = function(self, file_size)
+  return file_size > self.MAX_FILE_SIZE
 end
 
 _M.set_media_type = function(self, media_type)
