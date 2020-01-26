@@ -1,5 +1,5 @@
 local upload = require('resty.upload')
-local parse_header = require('httoolsp').parse_header
+local parse_header = require('httoolsp.headers').parse_header
 
 local utils = require('app.utils')
 local constants = require('app.constants')

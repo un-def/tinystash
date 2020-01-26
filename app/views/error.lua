@@ -1,4 +1,5 @@
 local json_encode = require('cjson.safe').encode
+local parse_accept_header = require('httoolsp.headers').parse_accept_header
 
 local render_to_string = require('app.views.helpers').render_to_string
 
@@ -23,6 +24,15 @@ local REASONS = {
 }
 
 
+local MEDIA_TYPES = {
+  'text/html',
+  'application/json',
+  'text/plain',
+}
+
+local DEFAULT_MEDIA_TYPE = MEDIA_TYPES[1]
+
+
 local error_page_cache = {}
 
 
@@ -31,7 +41,20 @@ local error_handler = function()
   local status = tonumber(args.status or ngx.status)
   ngx.status = status
   local description = args.description
-  local content_type = ngx_header['content-type']
+
+  local content_type
+  local accept_header = ngx_req.get_headers()['accept']
+  if type(accept_header) == 'table' then
+    accept_header = accept_header[1]
+  end
+  if accept_header then
+    content_type = parse_accept_header(accept_header):negotiate(MEDIA_TYPES)
+  end
+  if not content_type then
+    content_type = DEFAULT_MEDIA_TYPE
+  end
+  ngx_header['content-type'] = content_type
+
   if content_type == 'text/plain' then
     ngx_say('ERROR: ', description or status)
     return ngx_exit(ngx_HTTP_OK)
@@ -42,9 +65,6 @@ local error_handler = function()
     })
     return ngx_exit(ngx_HTTP_OK)
   else
-    if not content_type then
-      ngx_header['content-type'] = 'text/html'
-    end
     -- do not cache error pages with arbitrary descriptions
     local cacheable = not description
     if cacheable then

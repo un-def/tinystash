@@ -1,4 +1,5 @@
 local json_encode = require('cjson.safe').encode
+local parse_accept_header = require('httoolsp.headers').parse_accept_header
 
 local tinyid = require('app.tinyid')
 local utils = require('app.utils')
@@ -46,6 +47,12 @@ local err_code_to_log_level = function(err_code)
 end
 
 
+local MEDIA_TYPES = {
+  'text/plain',
+  'application/json',
+}
+
+
 return {
 
   initial = function(upload_type)
@@ -86,15 +93,15 @@ return {
     if enable_upload_api and app_id then
       log('app_id: %s', app_id)
       local accept_header = headers['accept']
-      if type(accept_header) == 'string' then
-        for accept_media_type in accept_header:gmatch('[^, ]+') do
-          if accept_media_type == 'application/json' then
-            direct_upload_json = true
-            break
-          end
-        end
+      if type(accept_header) == 'table' then
+        accept_header = accept_header[1]
       end
-      if direct_upload_json then
+      local accept
+      if accept_header then
+        accept = parse_accept_header(accept_header):negotiate(MEDIA_TYPES)
+      end
+      if accept == 'application/json' then
+        direct_upload_json = true
         ngx_header['content-type'] = 'application/json'
       else
         direct_upload_plain = true
