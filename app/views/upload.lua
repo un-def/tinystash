@@ -174,7 +174,7 @@ return {
         },
       })
     elseif direct_upload_plain then
-      ngx_say(render_link('dl'))
+      ngx_say(render_link('il'))
     else
       return ngx_redirect(render_link('ln'), ngx_HTTP_SEE_OTHER)
     end
