@@ -16,16 +16,14 @@ local format_error = utils.format_error
 local CHUNK_SIZE = constants.CHUNK_SIZE
 
 
-local FIELD_NAME_CONTENT = 'content'
-local FIELD_NAME_CSRFTOKEN = 'csrftoken'
+local CSRFTOKEN_FIELD_NAME = 'csrftoken'
 
 
 local _M = setmetatable({}, base_uploader)
 
 _M.__index = _M
 
-_M.FIELD_NAME_CONTENT = FIELD_NAME_CONTENT
-_M.FIELD_NAME_CSRFTOKEN = FIELD_NAME_CSRFTOKEN
+_M.CSRFTOKEN_FIELD_NAME = CSRFTOKEN_FIELD_NAME
 
 _M.new = function(_, upload_type, chat_id, headers)
   local cookie = headers['cookie']
@@ -35,7 +33,7 @@ _M.new = function(_, upload_type, chat_id, headers)
   end
   local csrftoken
   for key, value in cookie:gmatch('([^%c%s;]+)=([^%c%s;]+)') do
-    if key == FIELD_NAME_CSRFTOKEN then
+    if key == CSRFTOKEN_FIELD_NAME then
       csrftoken = value
       break
     end
@@ -52,6 +50,7 @@ _M.new = function(_, upload_type, chat_id, headers)
   form:set_timeout(1000) -- 1 sec
   return setmetatable({
     upload_type = upload_type,
+    content_field = upload_type,
     chat_id = chat_id,
     csrftoken = csrftoken,
     form = form,
@@ -76,13 +75,13 @@ _M.run = function(self)
       break
     else
       local field_name, filename, media_type, initial_data = unpack(res)
-      if field_name == FIELD_NAME_CSRFTOKEN then
+      if field_name == CSRFTOKEN_FIELD_NAME then
         csrftoken = initial_data
         if csrftoken ~= self.csrftoken then
           log('invalid csrf token')
           return nil, ngx_HTTP_FORBIDDEN
         end
-      elseif field_name == FIELD_NAME_CONTENT then
+      elseif field_name == self.content_field then
         if initial_data:len() == 0 then
           return nil, ngx_HTTP_BAD_REQUEST, 'empty file'
         end

@@ -1,11 +1,11 @@
 {% local layout = 'web/layout.html' %}
 <div class="upload-page">
   <form method="post" enctype="multipart/form-data" class="upload-form{% if upload_type == 'text' then %} vertical{% end %}">
-    <input type="hidden" name="{* csrftoken_name *}" value="{* csrftoken_value *}">
+    <input type="hidden" name="{* csrftoken_field *}" value="{* csrftoken *}">
     {% if upload_type == 'file' then %}
-      <input type="file" name="{* content_name *}">
+      <input type="file" name="{* content_field *}">
     {% elseif upload_type == 'text' then %}
-      <textarea name="{* content_name *}"></textarea>
+      <textarea name="{* content_field *}"></textarea>
     {% end %}
     <input type="submit" value="Upload">
   </form>

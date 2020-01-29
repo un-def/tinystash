@@ -35,8 +35,7 @@ local get_media_type_id = utils.get_media_type_id
 local render_link_factory = helpers.render_link_factory
 local render = helpers.render
 
-local FIELD_NAME_CONTENT = formdata_uploader.FIELD_NAME_CONTENT
-local FIELD_NAME_CSRFTOKEN = formdata_uploader.FIELD_NAME_CSRFTOKEN
+local CSRFTOKEN_FIELD_NAME = formdata_uploader.CSRFTOKEN_FIELD_NAME
 
 
 local err_code_to_log_level = function(err_code)
@@ -73,12 +72,12 @@ return {
     end
     local csrftoken = generate_random_hex_string(16)
     ngx_header['set-cookie'] = ('%s=%s; Path=%s%s; HttpOnly; SameSite=Strict'):format(
-      FIELD_NAME_CSRFTOKEN, csrftoken, url_path_prefix, path)
+      CSRFTOKEN_FIELD_NAME, csrftoken, url_path_prefix, path)
     render('web/upload.html', {
       upload_type = upload_type,
-      csrftoken_name = FIELD_NAME_CSRFTOKEN,
-      csrftoken_value = csrftoken,
-      content_name = FIELD_NAME_CONTENT,
+      csrftoken = csrftoken,
+      csrftoken_field = CSRFTOKEN_FIELD_NAME,
+      content_field = upload_type,
     })
   end,
 
