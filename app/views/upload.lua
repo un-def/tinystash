@@ -59,9 +59,6 @@ return {
     if not enable_upload then
       return error(ngx_HTTP_NOT_FOUND)
     end
-    if upload_type == '' then
-      upload_type = 'file'
-    end
     return upload_type
   end,
 

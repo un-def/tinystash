@@ -13,11 +13,13 @@
       </div>
       {% if enable_upload then %}
         <nav>
-          {% if enable_upload_api then %}
-            <span>[ <a href="{* url_path_prefix *}/docs/api">docs/api</a> ]</span>
-          {% end %}
-          <span>[ <a href="{* url_path_prefix *}/upload/text">upload text</a> ]</span>
-          <span>[ <a href="{* url_path_prefix *}/upload">upload file</a> ]</span>
+          <ul>
+            {% if enable_upload_api then %}
+              <li><span>[</span><a href="{* url_path_prefix *}/docs/api">docs<span>/</span>api</a><span>]</span></li>
+            {% end %}
+            <li><span>[</span><a href="{* url_path_prefix *}/upload/text">upload<span>/</span>text</a><span>]</span></li>
+            <li><span>[</span><a href="{* url_path_prefix *}/upload/file">upload<span>/</span>file</a><span>]</span></li>
+          </ul>
         </nav>
       {% end %}
     </header>

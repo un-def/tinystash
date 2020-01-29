@@ -74,7 +74,11 @@ http {
       }
     }
 
-    location ~ ^/upload(?:/(?P<type>text|file))?/?$ {
+    location ~ ^/upload/?$ {
+      return 308 /upload/file;
+    }
+
+    location ~ ^/upload/(?P<type>file|text)/?$ {
       content_by_lua_block {
         require('app.views').upload(ngx.var.type)
       }

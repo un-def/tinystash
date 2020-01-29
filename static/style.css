@@ -153,15 +153,26 @@ header .logo sup {
 }
 
 header nav {
+  padding-bottom: 0.2em;
+}
+
+header nav ul {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
   justify-content: flex-end;
-  padding-bottom: 0.2em;
+}
+
+header nav li {
+  white-space: nowrap;
+  display: inline;
+  list-style-type: none;
 }
 
 header nav span {
-  white-space: nowrap;
+  display: inline-block;
+  margin: 0 2px;
+  color: #777;
 }
 
 .content {
