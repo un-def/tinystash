@@ -61,7 +61,6 @@ _M.run = function(self)
   -- sets:
   --    self.media_type: string (via set_media_type)
   --    self.bytes_uploaded: int (via upload)
-  --    self.boundary: string (via set_boundary)
   --    self.conn: http connection (via upload)
   local csrftoken, file_object
   local res, err, err_code
@@ -87,7 +86,6 @@ _M.run = function(self)
         end
         self:set_media_type(media_type)
         self:set_filename(self.media_type, filename)
-        self:set_boundary()
         local content_iterator = self:get_content_iterator(initial_data)
         file_object, err_code = self:upload(content_iterator)
         if not file_object then

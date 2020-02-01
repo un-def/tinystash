@@ -1,3 +1,5 @@
+local formdata = require('httoolsp.formdata')
+
 local tg = require('app.tg')
 local utils = require('app.utils')
 local constants = require('app.constants')
@@ -7,7 +9,6 @@ local ngx_HTTP_BAD_REQUEST = ngx.HTTP_BAD_REQUEST
 local ngx_HTTP_BAD_GATEWAY = ngx.HTTP_BAD_GATEWAY
 local ngx_ERR = ngx.ERR
 local ngx_INFO = ngx.INFO
-local yield = coroutine.yield
 
 local prepare_connection = tg.prepare_connection
 local request_tg_server = tg.request_tg_server
@@ -18,13 +19,6 @@ local guess_extension = utils.guess_extension
 local escape_ext = utils.escape_ext
 local normalize_media_type = utils.normalize_media_type
 local generate_random_hex_string = utils.generate_random_hex_string
-
-
-local yield_chunk = function(bytes)
-  -- yield chunked transfer encoding chunk
-  if bytes == nil then bytes = '' end
-  yield(('%X\r\n%s\r\n'):format(#bytes, bytes))
-end
 
 
 local not_implemented = function()
@@ -77,13 +71,13 @@ end
 
 _M.upload = function(self, content)
   -- params:
-  --    content: string or function -- body or iterator producing body chunks
+  --    content: string or function -- body or iterator producing content chunks
   -- returns:
   --    if ok: TG API object (Document/Video/...) table with mandatory 'file_id' field
   --    if error: nil, error_code
   -- sets:
   --    self.conn: table -- http connection
-  --    self.bytes_uploaded: int (via upload_body_coro)
+  --    self.bytes_uploaded: int (via _get_content_iterator closure)
   local conn, res, err
   conn, err = prepare_connection()
   if not conn then
@@ -91,23 +85,28 @@ _M.upload = function(self, content)
     return nil, ngx_HTTP_BAD_GATEWAY
   end
   self.conn = conn
-  local upload_body_iterator = coroutine.wrap(self.upload_body_coro)
-  -- pass function arguments in the first call (priming)
-  upload_body_iterator(self, content)
+  local media_type = self.media_type
+  -- avoid automatic gif -> mp4 conversion by tricking Telegram
+  if media_type == 'image/gif' then
+    -- replace actual content type with generic one
+    media_type = 'application/octet-stream'
+  end
+  local fd = formdata.new()
+  fd:set('chat_id', tostring(self.chat_id))
+  fd:set('document', self:_get_content_iterator(content), media_type, self.filename)
   local params = {
     path = '/bot%s/sendDocument',
     method = 'POST',
     headers = {
-      ['content-type'] = 'multipart/form-data; boundary=' .. self.boundary,
+      ['content-type'] = 'multipart/form-data; boundary=' .. fd:get_boundary(),
       ['transfer-encoding'] = 'chunked',
     },
-    body = upload_body_iterator,
+    body = self:_get_chunked_body_iterator(fd:iterator()),
   }
   res, err = request_tg_server(conn, params, true)
-  -- upload_body_iterator sets self._content_iterator_error to indicate error
+  -- _get_content_iterator closure sets self._content_iterator_error to indicate error
   -- while reading content from request
   if self._content_iterator_error then
-    log('content iterator error: %s', self._content_iterator_error)
     return nil, ngx_HTTP_BAD_REQUEST
   end
   if not res then
@@ -136,55 +135,61 @@ _M.upload = function(self, content)
   return file_object
 end
 
-_M.upload_body_coro = function(self, content)
+_M._get_content_iterator = function(self, content)
   -- params:
   --    content: string or function -- body or iterator producing body chunks
-  -- sets:
-  --    self.bytes_uploaded: integer
-  --    self._content_iterator_error: string -- error message (if any)
-  --
-  -- send nothing on first call (iterator priming)
-  yield(nil)
-  local media_type = self.media_type
-  -- avoid automatic gif -> mp4 conversion by tricking Telegram
-  if media_type == 'image/gif' then
-    -- replace actual content type with generic one
-    media_type = 'application/octet-stream'
-  end
-  local boundary = self.boundary
-  local sep = ('--%s\r\n'):format(boundary)
-  yield_chunk(sep)
-  yield_chunk('content-disposition: form-data; name="chat_id"\r\n\r\n')
-  yield_chunk(('%s\r\n'):format(self.chat_id))
-  yield_chunk(sep)
-  yield_chunk(('content-disposition: form-data; name="document"; filename="%s"\r\n'):format(self.filename))
-  yield_chunk(('content-type: %s\r\n\r\n'):format(media_type))
-  local bytes_uploaded = 0
+  -- returns:
+  --    iterator function that controls uploaded file size and sets self.bytes_uploaded
   if type(content) == 'function' then
-    while true do
+    return function()
+      local bytes_uploaded = self.bytes_uploaded or 0
+      if self:is_max_file_size_exceeded(bytes_uploaded) then
+        log(ngx_INFO, 'content iterator produced more bytes than MAX_FILE_SIZE, breaking consuming')
+        return nil
+      end
       local chunk, err = content()
       if err then
+        log(ngx_INFO, 'content iterator error: %s', err)
         self._content_iterator_error = err
-        break
+        return nil
       end
       if not chunk then
         log('end of content')
-        break
+        return nil
       end
-      yield_chunk(chunk)
-      bytes_uploaded = bytes_uploaded + #chunk
-      if self:is_max_file_size_exceeded(bytes_uploaded) then
-        log(ngx_INFO, 'content iterator produced more bytes than MAX_FILE_SIZE, breaking consuming')
-        break
-      end
+      self.bytes_uploaded = bytes_uploaded + #chunk
+      return chunk
     end
   else
-    yield_chunk(content)
-    bytes_uploaded = #content
+    local done = false
+    return function()
+      if done then
+        self.bytes_uploaded = #content
+        return nil
+      end
+      done = true
+      return content
+    end
   end
-  yield_chunk(('\r\n--%s--\r\n'):format(boundary))
-  yield_chunk(nil)
-  self.bytes_uploaded = bytes_uploaded
+end
+
+_M._get_chunked_body_iterator = function(_, iterator)
+  -- params:
+  --    iterator: iterator producing body chunks
+  -- returns:
+  --    iterator producing `transfer-encoding: chunked` chunks
+  local done = false
+  return function()
+    if done then
+      return nil
+    end
+    local chunk = iterator()
+    if not chunk then
+      done = true
+      chunk = ''
+    end
+    return ('%X\r\n%s\r\n'):format(#chunk, chunk)
+  end
 end
 
 _M.is_max_file_size_exceeded = function(self, file_size)
@@ -223,12 +228,6 @@ _M.set_filename = function(self, media_type, filename)
     filename = filename:gsub('[%s";\\]', '_')
   end
   self.filename = escape_ext(filename)
-end
-
-_M.set_boundary = function(self)
-  -- sets:
-  --    self.boundary: string
-  self.boundary = 'BNDR-' .. generate_random_hex_string(32)
 end
 
 return _M

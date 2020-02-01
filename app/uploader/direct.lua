@@ -57,7 +57,6 @@ end
 _M.run = function(self)
   -- sets:
   --    self.bytes_uploaded: int (via upload)
-  --    self.boundary: string
   --    self.conn: http connection (via upload)
   local sock, err = req_socket()
   if not sock then
@@ -66,7 +65,6 @@ _M.run = function(self)
   end
   sock:settimeout(DOWNSTREAM_TIMEOUT)
   self.request_socket = sock
-  self:set_boundary()
   local content_iterator = self:get_content_iterator()
   local file_object, err_code
   file_object, err_code = self:upload(content_iterator)
