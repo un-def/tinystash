@@ -41,4 +41,12 @@ _M.render = function(template_path, context, plain)
   ngx_print(render_to_string(template_path, context, plain))
 end
 
+local markdown_escape_cb = function(char)
+  return ([[\%s]]):format(char)
+end
+
+_M.markdown_escape = function(text)
+  return text:gsub('[_*`[]', markdown_escape_cb)
+end
+
 return _M

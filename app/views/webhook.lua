@@ -35,6 +35,7 @@ local enable_upload_api = config._processed.enable_upload_api
 
 local render_link_factory = helpers.render_link_factory
 local render_to_string = helpers.render_to_string
+local markdown_escape = helpers.markdown_escape
 
 
 local send_webhook_response = function(message, template_path, context)
@@ -135,7 +136,7 @@ return {
     return send_webhook_response(message, 'bot/ok-links.txt', {
       modes = GET_FILE_MODES,
       render_link = render_link_factory(tiny_id),
-      extension = extension,
+      extension = markdown_escape(extension),
       hide_download_link = hide_download_link,
     })
 
