@@ -1,11 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
+<head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link href="{* url_path_prefix *}/static/style.css" rel="stylesheet">
   <link rel="icon" href="{* url_path_prefix *}/static/favicon.png" type="image/png">
   <title>{% if title then %}{{ title }}{* ' &mdash; ' *}{% end %}[tiny]stash</title>
+</head>
 <body>
+  {% if gtm_id then %}
+    <iframe src="https://www.googletagmanager.com/ns.html?id={* gtm_id *}" height="0" width="0" style="display:none;visibility:hidden"></iframe>
+  {% end %}
   <div class="container">
     <header>
       <div class="logo">

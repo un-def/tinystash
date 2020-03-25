@@ -66,4 +66,7 @@ return {
   -- enable direct file upload (e.g., via curl)
   enable_upload_api = true,
 
+  -- Google Tag Manager ID (Container ID), string or nil
+  gtm_id = nil,
+
 }
