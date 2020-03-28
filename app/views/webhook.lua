@@ -136,7 +136,7 @@ return {
     return send_webhook_response(message, 'bot/ok-links.txt', {
       modes = GET_FILE_MODES,
       render_link = render_link_factory(tiny_id),
-      extension = markdown_escape(extension),
+      extension = extension and markdown_escape(extension),
       hide_download_link = hide_download_link,
     })
 
