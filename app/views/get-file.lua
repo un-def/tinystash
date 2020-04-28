@@ -1,9 +1,15 @@
+local base58 = require('basex').base58bitcoin
+
+local cipher = require('app.cipher')
 local tinyid = require('app.tinyid')
 local utils = require('app.utils')
 local constants = require('app.constants')
 local tg = require('app.tg')
 local helpers = require('app.views.helpers')
 
+
+local string_match = string.match
+local string_format = string.format
 
 local ngx_print = ngx.print
 local ngx_header = ngx.header
@@ -34,6 +40,30 @@ local TG_TYPES = constants.TG_TYPES
 local TG_TYPES_EXTENSIONS_MAP = constants.TG_TYPES_EXTENSIONS_MAP
 local GET_FILE_MODES = constants.GET_FILE_MODES
 local CHUNK_SIZE = constants.CHUNK_SIZE
+
+
+local unquote_etag = function(etag)
+  etag = string_match(etag, '^"(.+)"$')
+  if not etag or #etag == 0 then return nil end
+  return etag
+end
+
+local encode_etag = function(etag)
+  etag = unquote_etag(etag)
+  if not etag then return nil end
+  etag = base58:encode(cipher:encrypt(etag))
+  return string_format('"%s"', etag)
+end
+
+local decode_etag = function(etag)
+  etag = unquote_etag(etag)
+  if not etag then return nil end
+  etag = base58:decode(etag)
+  if not etag then return nil end
+  etag = cipher:decrypt(etag)
+  if not etag then return nil end
+  return string_format('"%s"', etag)
+end
 
 
 return {
@@ -104,9 +134,12 @@ return {
     }
     local expected_etag = ngx_req_get_headers()['if-none-match']
     if type(expected_etag) == 'string' then
-      params.headers = {
-        ['if-none-match'] = expected_etag,
-      }
+      expected_etag = decode_etag(expected_etag)
+      if expected_etag then
+        params.headers = {
+          ['if-none-match'] = expected_etag,
+        }
+      end
     end
     res, err = request_tg_server(conn, params)
     if not res then
@@ -160,7 +193,7 @@ return {
     ngx_header['content-length'] = file_size
     local etag = res.headers['etag']
     if type(etag) == 'string' then
-      ngx_header['etag'] = etag
+      ngx_header['etag'] = encode_etag(etag)
     end
 
     local chunk
