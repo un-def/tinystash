@@ -7,10 +7,13 @@ local helpers = require('app.views.helpers')
 
 local ngx_print = ngx.print
 local ngx_header = ngx.header
+local ngx_exit = ngx.exit
 local ngx_req = ngx.req
+local ngx_req_get_headers = ngx_req.get_headers
 local ngx_INFO = ngx.INFO
 local ngx_ERR = ngx.ERR
 local ngx_HTTP_OK = ngx.HTTP_OK
+local ngx_HTTP_NOT_MODIFIED = ngx.HTTP_NOT_MODIFIED
 local ngx_HTTP_NOT_FOUND = ngx.HTTP_NOT_FOUND
 local ngx_HTTP_BAD_GATEWAY = ngx.HTTP_BAD_GATEWAY
 
@@ -99,13 +102,23 @@ return {
     params = {
       path = escape_uri('/file/bot%s/' .. file_path),
     }
+    local expected_etag = ngx_req_get_headers()['if-none-match']
+    if type(expected_etag) == 'string' then
+      params.headers = {
+        ['if-none-match'] = expected_etag,
+      }
+    end
     res, err = request_tg_server(conn, params)
     if not res then
       log(ngx_ERR, 'tg file storage request error: %s', err)
       conn:set_keepalive()
       return error(ngx_HTTP_BAD_GATEWAY)
     end
-    if res.status ~= ngx_HTTP_OK then
+    local res_status = res.status
+    if res_status == ngx_HTTP_NOT_MODIFIED then
+      conn:set_keepalive()
+      return ngx_exit(ngx_HTTP_NOT_MODIFIED)
+    elseif res_status ~= ngx_HTTP_OK then
       log(ngx_ERR, 'tg file storage response status %s != 200', res.status)
       conn:set_keepalive()
       return error(ngx_HTTP_NOT_FOUND)
@@ -145,6 +158,10 @@ return {
     ngx_header['content-disposition'] = ("%s; filename*=utf-8''%s"):format(
       content_disposition, escape_uri(file_name, true))
     ngx_header['content-length'] = file_size
+    local etag = res.headers['etag']
+    if type(etag) == 'string' then
+      ngx_header['etag'] = etag
+    end
 
     local chunk
     while true do

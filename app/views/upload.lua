@@ -13,6 +13,7 @@ local ngx_redirect = ngx.redirect
 local ngx_print = ngx.print
 local ngx_say = ngx.say
 local ngx_req = ngx.req
+local ngx_req_get_headers = ngx_req.get_headers
 local ngx_var = ngx.var
 local ngx_header = ngx.header
 local ngx_DEBUG = ngx.DEBUG
@@ -82,7 +83,7 @@ return {
   end,
 
   POST = function(upload_type)
-    local headers = ngx_req.get_headers()
+    local headers = ngx_req_get_headers()
     local app_id = headers['app-id']
     local direct_upload_json = false
     local direct_upload_plain = false
