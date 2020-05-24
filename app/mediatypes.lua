@@ -22,6 +22,8 @@ local MEDIA_TYPES = {
   [10] = {'application/xml', 'xml'},
   [14] = {'application/javascript', 'js'},
   [15] = {'application/json', 'json'},
+  [20] = {'application/zip', 'zip'},
+  [21] = {'application/gzip', 'gz'},
   -- text types
   [11] = {'text/plain', 'txt'},
   [12] = {'text/html', 'html'},
@@ -30,7 +32,7 @@ local MEDIA_TYPES = {
   [17] = {'video/mp4', 'mp4'},
   [18] = {'video/webm', 'webm'},
 
-  -- [20] = {},   -- next index
+  -- [22] = {},   -- next index
 }
 
 
