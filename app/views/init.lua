@@ -10,6 +10,7 @@ local ngx_HTTP_NOT_ALLOWED = ngx.HTTP_NOT_ALLOWED
 
 local template_handler_meta = {
   __call = function(self)
+    ngx_header['content-type'] = self.content_type
     if self.content then
       ngx_print(self.content)
       return
@@ -33,10 +34,14 @@ local template_handler = function(params)
   if cache == nil then
     cache = true
   end
-  ngx_header['content-type'] = params.content_type or 'text/html'
+  local content_type = params.content_type
+  if not content_type then
+    content_type = 'text/html'
+  end
   return setmetatable({
     template = params[1],
     context = params[2],
+    content_type = content_type,
     cache = cache,
   }, template_handler_meta)
 end
