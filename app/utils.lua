@@ -48,7 +48,7 @@ _M.log = function(...)
     message = tostring(message):format(select(args_offset, ...))
   end
   local info = debug_getinfo(2, 'Sln')
-  message = ('%s:%s: %s():\n\n*** [%s] %s\n'):format(
+  message = ('%s:%s: %s:\n\n*** [%s] %s\n'):format(
     info.short_src:match('//(app/.+)'), info.currentline,
     info.name, LOG_LEVEL_NAMES[level], message)
   raw_log(level, message)

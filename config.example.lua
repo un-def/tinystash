@@ -23,6 +23,9 @@ return {
     -- chat_id (integer or string) for uploaded files
     -- set to nil to disable http uploading
     upload_chat_id = nil,
+    -- chat_id (integer or string) for forwarded messages
+    -- set to nil to disable message forwarding
+    forward_chat_id = nil,
   },
 
   nginx_conf = {

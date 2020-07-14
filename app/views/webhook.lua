@@ -7,12 +7,18 @@ local helpers = require('app.views.helpers')
 local get_file_from_message = require('app.tg').get_file_from_message
 
 local config = require('app.config')
+local tg = require('app.tg')
 
+
+local yield = coroutine.yield
 
 local ngx_say = ngx.say
 local ngx_req = ngx.req
 local ngx_header = ngx.header
+local ngx_thread_spawn = ngx.thread.spawn
 local ngx_HTTP_NOT_FOUND = ngx.HTTP_NOT_FOUND
+local ngx_INFO = ngx.INFO
+local ngx_ERR = ngx.ERR
 
 local json_encode = json.encode
 local json_decode = json.decode
@@ -28,10 +34,14 @@ local GET_FILE_MODES = constants.GET_FILE_MODES
 
 local tg_bot_username = config.tg.bot_username
 local tg_webhook_secret = config._processed.tg_webhook_secret
+local tg_forward_chat_id = config.tg.forward_chat_id
 local hide_image_download_link = config.hide_image_download_link
 local link_url_prefix = config._processed.link_url_prefix
 local enable_upload = config._processed.enable_upload
 local enable_upload_api = config._processed.enable_upload_api
+
+local prepare_connection = tg.prepare_connection
+local request_tg_server = tg.request_tg_server
 
 local render_link_factory = helpers.render_link_factory
 local render_to_string = helpers.render_to_string
@@ -56,6 +66,37 @@ local send_webhook_response = function(message, template_path, context)
 end
 
 
+local forward_message = function(message)
+  -- yield to return from ngx.thread.spawn ASAP
+  yield()
+  local conn, err = prepare_connection()
+  if not conn then
+    log(ngx_ERR, 'tg api connection error: %s', err)
+    return
+  end
+  local params = {
+    path = '/bot%s/forwardMessage',
+    method = 'POST',
+    headers = {
+      ['content-type'] = 'application/json',
+    },
+    body = json_encode{
+      chat_id = tg_forward_chat_id,
+      from_chat_id = message.chat.id,
+      message_id = message.message_id,
+    },
+  }
+  local res, err = request_tg_server(conn, params, true)  -- luacheck: ignore 411
+  if not res then
+    log(ngx_ERR, 'tg api request error: %s', err)
+    return
+  end
+  if not res.ok then
+    log(ngx_INFO, 'tg api response is not "ok": %s', res.description)
+  end
+end
+
+
 return {
 
   initial = function(secret)
@@ -76,6 +117,15 @@ return {
 
     local is_groupchat = message.chat.type ~= TG_CHAT_PRIVATE
 
+    -- tricky way to ignore groupchat service messages (e.g., new_chat_member)
+    if is_groupchat and not message.reply_to_message then
+      return
+    end
+
+    if tg_forward_chat_id then
+      ngx_thread_spawn(forward_message, message)
+    end
+
     if message.text then
       local command, bot_username = message.text:match('^/([%w_]+)@?([%w_]*)')
       if not command then
@@ -90,11 +140,6 @@ return {
         enable_upload = enable_upload,
         enable_upload_api = enable_upload_api,
       })
-    end
-
-    -- tricky way to ignore groupchat service messages (e.g., new_chat_member)
-    if is_groupchat and not message.reply_to_message then
-      return
     end
 
     local file, err = get_file_from_message(message)
