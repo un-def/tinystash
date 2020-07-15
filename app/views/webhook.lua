@@ -86,7 +86,7 @@ local forward_message = function(message)
       message_id = message.message_id,
     },
   }
-  local res, err = request_tg_server(conn, params, true)  -- luacheck: ignore 411
+  local res, err = request_tg_server(conn, params, true)   -- luacheck: ignore 411
   if not res then
     log(ngx_ERR, 'tg api request error: %s', err)
     return

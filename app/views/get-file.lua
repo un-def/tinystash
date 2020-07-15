@@ -23,6 +23,9 @@ local ngx_HTTP_NOT_MODIFIED = ngx.HTTP_NOT_MODIFIED
 local ngx_HTTP_NOT_FOUND = ngx.HTTP_NOT_FOUND
 local ngx_HTTP_BAD_GATEWAY = ngx.HTTP_BAD_GATEWAY
 
+local cipher_encrypt = cipher.encrypt
+local cipher_decrypt = cipher.decrypt
+
 local log = utils.log
 local error = utils.error
 local escape_uri = utils.escape_uri
@@ -51,7 +54,7 @@ end
 local encode_etag = function(etag)
   etag = unquote_etag(etag)
   if not etag then return nil end
-  etag = base58:encode(cipher:encrypt(etag))
+  etag = base58:encode(cipher_encrypt(etag))
   return string_format('"%s"', etag)
 end
 
@@ -60,7 +63,7 @@ local decode_etag = function(etag)
   if not etag then return nil end
   etag = base58:decode(etag)
   if not etag then return nil end
-  etag = cipher:decrypt(etag)
+  etag = cipher_decrypt(etag)
   if not etag then return nil end
   return string_format('"%s"', etag)
 end

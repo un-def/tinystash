@@ -4,6 +4,9 @@ local cipher = require('app.cipher')
 local mediatypes = require('app.mediatypes')
 local utils = require('app.utils')
 
+local cipher_encrypt = cipher.encrypt
+local cipher_decrypt = cipher.decrypt
+
 local DEFAULT_TYPE_ID = mediatypes.DEFAULT_TYPE_ID
 local ID_TYPE_MAP = mediatypes.ID_TYPE_MAP
 local decode_urlsafe_base64 = utils.decode_urlsafe_base64
@@ -25,7 +28,7 @@ _M.encode = function(params)
     file_id_bytes,
     media_type_byte,
   }
-  local tiny_id_encr_bytes = cipher:encrypt(tiny_id_raw_bytes)
+  local tiny_id_encr_bytes = cipher_encrypt(tiny_id_raw_bytes)
   return base58:encode(tiny_id_encr_bytes)
 end
 
@@ -35,9 +38,9 @@ _M.decode = function(tiny_id)
   if not tiny_id_encr_bytes then
     return nil, err
   end
-  local tiny_id_raw_bytes = cipher:decrypt(tiny_id_encr_bytes)
+  local tiny_id_raw_bytes, err = cipher_decrypt(tiny_id_encr_bytes)   -- luacheck: ignore 411
   if not tiny_id_raw_bytes then
-    return nil, 'AES decrypt error'
+    return nil, err
   end
   -- get file_id size
   local file_id_size = string.byte(tiny_id_raw_bytes:sub(1, 1))
