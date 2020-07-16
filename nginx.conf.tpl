@@ -23,7 +23,6 @@ http {
   lua_package_cpath "$prefix/resty_modules/lualib/?.so;;";
 
   init_by_lua_block {
-    require('resty.core')
     {% if resty_http_debug_logging then %}
     require('resty.http').debug(true)
     {% end %}
