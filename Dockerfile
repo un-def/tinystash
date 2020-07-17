@@ -6,7 +6,7 @@ RUN while read dep; do opm --cwd get "$dep"; done < /tmp/requirements.opm
 COPY app/ app/
 COPY static/ static/
 COPY templates/ templates/
-COPY scripts/ scripts/
+COPY commands/ commands/
 COPY tinysta.sh tinysta.sh
 COPY nginx.conf.tpl nginx.conf.tpl
 

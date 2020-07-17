@@ -8,4 +8,4 @@ nginx.pid
 
 *.sh
 !/tinysta.sh
-!/scripts/resty-runner.sh
+!/commands/command-runner.sh

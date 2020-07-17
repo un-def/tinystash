@@ -1,16 +1,18 @@
 #!/bin/sh
 
-tinystash_dir=$(dirname "$(readlink -f "${0}")")
-nginx_conf="${tinystash_dir}/nginx.conf"
-scripts_dir="${tinystash_dir}/scripts"
-resty_runner="${scripts_dir}/resty-runner.sh"
-
-TINYSTASH_CONFIG_PATH=$(readlink -f "${TINYSTASH_CONFIG_PATH:-"${tinystash_dir}/config.lua"}")
+OPENRESTY_PREFIX=${OPENRESTY_PREFIX:-/usr/local/openresty}
+export OPENRESTY_PREFIX
+TINYSTASH_DIR=$(dirname "$(readlink -f "${0}")")
+export TINYSTASH_DIR
+TINYSTASH_CONFIG_PATH=$(readlink -f "${TINYSTASH_CONFIG_PATH:-"${TINYSTASH_DIR}/config.lua"}")
 export TINYSTASH_CONFIG_PATH
+
+command_runner="${TINYSTASH_DIR}/commands/command-runner.sh"
+nginx_conf="${TINYSTASH_DIR}/nginx.conf"
 
 usage() {
   echo "
-usage: ${0} COMMAND [COMMAND_ARGS ...]
+usage: ${0} COMMAND [ARGS]
 
 commands:
   run
@@ -31,17 +33,18 @@ case "${command}" in
   conf|webhook)
     echo "using config: ${TINYSTASH_CONFIG_PATH}"
     echo
-    exec "${resty_runner}" "${command}" "${@}"
+    exec "${command_runner}" "${command}" "${@}"
     ;;
   run)
     echo "using config: ${TINYSTASH_CONFIG_PATH}"
-    if ! nginx_conf_content=$("${resty_runner}" conf); then
+    echo
+    if ! nginx_conf_content=$("${command_runner}" conf); then
       echo "error while generating nginx.conf:"
       echo "${nginx_conf_content}"
       exit 2
     fi
     echo "${nginx_conf_content}" > "${nginx_conf}"
-    exec /usr/local/openresty/nginx/sbin/nginx -c "${nginx_conf}" -p "${tinystash_dir}"
+    exec "${OPENRESTY_PREFIX}/nginx/sbin/nginx" -c "${nginx_conf}" -p "${TINYSTASH_DIR}"
     ;;
   *)
     usage

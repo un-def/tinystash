@@ -9,13 +9,8 @@ local secret = config._processed.tg_webhook_secret
 local assume_yes = false
 local verbose = false
 
-local die = function(...)
-  print(...)
-  os.exit(1)
-end
-
 if not token then
-  die('Bad config: set tg.token')
+  error('Bad config: set tg.token')
 end
 
 local verbose_print = function(...)
@@ -41,20 +36,21 @@ Options:
                         - 'webhook_secret' (if any)
                         - 'token' if 'webhook_secret' not set
 ]])
-  os.exit(0)
 end
 
+local argv = ...
 local arguments = {}
-for _, argument in ipairs(arg) do
+for _, argument in ipairs(argv) do
   if argument:sub(1, 1) == '-' then
     if argument == '-h' then
       show_help()
+      return
     elseif argument == '-y' then
       assume_yes = true
     elseif argument == '-v' then
       verbose = true
     else
-      die('Invalid option: ', argument)
+      error('Invalid option: ', argument)
     end
   else
     table.insert(arguments, argument)
@@ -68,7 +64,7 @@ local ask = function()
   io.stdout:write('Are you sure (yes/no)? ')
   io.stdout:flush()
   if io.stdin:read() ~= 'yes' then
-    die('Abort')
+    error('Abort')
   end
 end
 
@@ -76,7 +72,7 @@ local api_call = function(method, params)
   local httpc, res, err
   httpc, err = http.new()
   if not httpc then
-    die('TG API request error: ', err)
+    error('TG API request error: ', err)
   end
   httpc:set_timeout(10000)
   local uri = ('https://api.telegram.org/bot%s/%s'):format(token, method)
@@ -85,16 +81,16 @@ local api_call = function(method, params)
     ssl_verify = false,
   })
   if not res then
-    die('TG API request error: ', err)
+    error('TG API request error: ', err)
   end
   verbose_print('TG API response status: ', res.status)
   verbose_print('TG API response body: ', res.body)
   res, err = json.decode(res.body)
   if not res then
-    die('TG API response json decode error: ', err)
+    error('TG API response json decode error: ', err)
   end
   if not res.ok then
-    die('TG API response error: ', res.description)
+    error('TG API response error: ', res.description)
   end
   print('OK')
   if res.description then

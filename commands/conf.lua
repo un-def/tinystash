@@ -2,6 +2,9 @@ local compile_template = require('resty.template').compile
 
 local config = require('app.config').nginx_conf
 
+
+assert(OPENRESTY_PREFIX and OPENRESTY_PREFIX ~= '', 'OPENRESTY_PREFIX is not set')
+
 local NUMBER = type(1)
 local STRING = type('')
 local BOOLEAN = type(true)
@@ -26,7 +29,7 @@ local option = function(params)
   return value
 end
 
-local fd = assert(io.open(_G.TINYSTASH_DIR .. '/nginx.conf.tpl', 'r'))
+local fd = assert(io.open(TINYSTASH_DIR .. '/nginx.conf.tpl', 'r'))
 local template = assert(fd:read('*a'))
 fd:close()
 

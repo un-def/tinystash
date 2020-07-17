@@ -41,7 +41,7 @@ http {
     location /static/ {
       alias ./static/;
       try_files $uri =404;
-      include /usr/local/openresty/nginx/conf/mime.types;
+      include {* OPENRESTY_PREFIX *}/nginx/conf/mime.types;
     }
 
     location = /favicon.ico {
