@@ -31,8 +31,8 @@ return {
   nginx_conf = {
     -- (int, required)
     listen = 80,
-    -- (int, required)
-    worker_processes = 4,
+    -- (int | 'auto', optional, default is 'auto')
+    worker_processes = 'auto',
     -- (int, required)
     worker_connections = 1024,
     -- (string, required) 20 MiB getFile API method limit + 10% (multipart/form-data overhead)
@@ -48,8 +48,8 @@ return {
     access_log = 'off',
     -- (string, required)
     resolver = '8.8.8.8 ipv6=off',
-    -- ('on' | 'off', optional, default is 'on') set to 'off' in development mode
-    lua_code_cache = 'on',
+    -- (boolean | 'on' | 'off', optional, default is true/'on') set to false/'off' in development mode
+    lua_code_cache = true,
     -- (string, required)
     lua_ssl_trusted_certificate = '/etc/ssl/certs/ca-certificates.crt',
     -- (int, required)

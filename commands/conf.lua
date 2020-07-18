@@ -10,40 +10,74 @@ local STRING = type('')
 local BOOLEAN = type(true)
 local TABLE = type({})
 
+local fd = assert(io.open(TINYSTASH_DIR .. '/nginx.conf.tpl', 'r'))
+local template = assert(fd:read('*a'))
+fd:close()
+
 local option = function(params)
   local name = params[1]
   local value = config[name]
   if value == nil then
-    if params.required then
-      error(("missing required option '%s'"):format(name))
-    elseif params.default ~= nil then
+    if params.default then
       value = params.default
+    else
+      error(("missing required option '%s'"):format(name))
     end
-  elseif params.type then
-    local type = type(value)
-    if type ~= params.type then
-      error(("option '%s' has invalid value type: expected %s, got %s"):format(
-        name, params.type, type))
+  elseif params.validator then
+    local err
+    value, err = params.validator(value)
+    if err then
+      error(("option '%s' validation error: %s"):format(name, err))
     end
   end
   return value
 end
 
-local fd = assert(io.open(TINYSTASH_DIR .. '/nginx.conf.tpl', 'r'))
-local template = assert(fd:read('*a'))
-fd:close()
+local _type_validator = function(valid_types, value)
+  local value_type = type(value)
+  for _, valid_type in ipairs(valid_types) do
+    if value_type == valid_type then
+      return value
+    end
+  end
+  return nil, ('invalid value type: expected %s, got %s'):format(
+    table.concat(valid_types, ' or '), value_type)
+end
+
+local type_validator = function(...)
+  local valid_types = {...}
+  return function(value)
+    return _type_validator(valid_types, value)
+  end
+end
+
+local worker_processes_validator = function(value)
+  if value == 'auto' or type(value) == NUMBER then
+    return value
+  end
+  return nil, 'must be a number or "auto", got ' .. value
+end
+
+local lua_code_cache_validator = function(value)
+  if value == 'on' or value == 'off' then
+    return value
+  elseif type(value) == BOOLEAN then
+    return value and 'on' or 'off'
+  end
+  return nil, 'must be a boolean or "on" of "off", got ' .. value
+end
 
 local context = {
-  worker_processes = option{'worker_processes', type = NUMBER, required = true},
-  worker_connections = option{'worker_connections', type = NUMBER, required = true},
-  error_log = option{'error_log', type = TABLE, default = {}},
-  resolver = option{'resolver', type = STRING, required = true},
-  lua_ssl_trusted_certificate = option{'lua_ssl_trusted_certificate', type = STRING, required = true},
-  lua_ssl_verify_depth = option{'lua_ssl_verify_depth', type = NUMBER, required = true},
-  resty_http_debug_logging = option{'resty_http_debug_logging', type = BOOLEAN, default = false},
-  listen = option{'listen', type = NUMBER, required = true},
-  access_log = option{'access_log', type = STRING, default = 'off'},
-  lua_code_cache = option{'lua_code_cache', type = STRING, default = 'on'},
-  client_max_body_size = option{'client_max_body_size', required = true},
+  worker_processes = option{'worker_processes', validator = worker_processes_validator, default = 'auto'},
+  worker_connections = option{'worker_connections', validator = type_validator(NUMBER)},
+  error_log = option{'error_log', validator = type_validator(TABLE), default = {}},
+  resolver = option{'resolver', validator = type_validator(STRING)},
+  lua_ssl_trusted_certificate = option{'lua_ssl_trusted_certificate', validator = type_validator(STRING)},
+  lua_ssl_verify_depth = option{'lua_ssl_verify_depth', validator = type_validator(NUMBER)},
+  resty_http_debug_logging = option{'resty_http_debug_logging', validator = type_validator(BOOLEAN), default = false},
+  listen = option{'listen', validator = type_validator(NUMBER)},
+  access_log = option{'access_log', validator = type_validator(STRING), default = 'off'},
+  lua_code_cache = option{'lua_code_cache', validator = lua_code_cache_validator, default = true},
+  client_max_body_size = option{'client_max_body_size', validator = type_validator(STRING, NUMBER)},
 }
 print(compile_template(template, nil, true)(context))
