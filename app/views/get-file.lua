@@ -6,7 +6,7 @@ local utils = require('app.utils')
 local constants = require('app.constants')
 local tg = require('app.tg')
 local helpers = require('app.views.helpers')
-
+local DEFAULT_MEDIA_TYPE = require('app.mediatypes').DEFAULT_TYPE
 
 local string_match = string.match
 local string_format = string.format
@@ -103,7 +103,7 @@ return {
 
     local file_path = res.result.file_path
     local file_size = res.result.file_size
-    local media_type = tiny_id_params.media_type or 'application/octet-stream'
+    local media_type = tiny_id_params.media_type or DEFAULT_MEDIA_TYPE
     local extension
     -- fix voice message file .oga extension
     if file_path:match('^voice/.+%.oga$') then

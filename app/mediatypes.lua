@@ -1,4 +1,5 @@
 local DEFAULT_TYPE_ID = 0
+local DEFAULT_TYPE = 'application/octet-stream'
 
 -- KEEP THIS ARRAY DENSE!
 -- format: [media type id] = {'correct media type', ...aliases..., extension}
@@ -61,6 +62,7 @@ end
 
 return {
   DEFAULT_TYPE_ID = DEFAULT_TYPE_ID,
+  DEFAULT_TYPE = DEFAULT_TYPE,
   ID_TYPE_MAP = ID_TYPE_MAP,
   TYPE_ID_MAP = TYPE_ID_MAP,
   TYPE_EXT_MAP = TYPE_EXT_MAP,

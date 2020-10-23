@@ -31,7 +31,6 @@ local url_path_prefix = config._processed.url_path_prefix
 local log = utils.log
 local error = utils.error
 local generate_random_hex_string = utils.generate_random_hex_string
-local parse_media_type = utils.parse_media_type
 local get_media_type_id = utils.get_media_type_id
 local render_link_factory = helpers.render_link_factory
 local render = helpers.render
@@ -138,14 +137,8 @@ return {
       return error(413, 'the file is too big')
     end
 
-    local media_type = uploader.media_type
-    local media_type_id = get_media_type_id(media_type)
-    if not media_type_id then
-      local media_type_table = parse_media_type(media_type)
-      if media_type_table[1] == 'text' then
-        media_type_id = get_media_type_id('text/plain')
-      end
-    end
+    local media_type_id, media_type = get_media_type_id(uploader.media_type)
+    log('tinyid media type: %s (%s)', media_type, media_type_id)
 
     local tiny_id
     tiny_id, err = tinyid.encode{

@@ -3,6 +3,7 @@ local formdata = require('httoolsp.formdata')
 local tg = require('app.tg')
 local utils = require('app.utils')
 local constants = require('app.constants')
+local DEFAULT_TYPE = require('app.mediatypes').DEFAULT_TYPE
 
 
 local ngx_HTTP_BAD_REQUEST = ngx.HTTP_BAD_REQUEST
@@ -17,7 +18,6 @@ local get_file_from_message = tg.get_file_from_message
 local log = utils.log
 local guess_extension = utils.guess_extension
 local escape_ext = utils.escape_ext
-local normalize_media_type = utils.normalize_media_type
 local generate_random_hex_string = utils.generate_random_hex_string
 
 
@@ -89,7 +89,7 @@ _M.upload = function(self, content)
   -- avoid automatic gif -> mp4 conversion by tricking Telegram
   if media_type == 'image/gif' then
     -- replace actual content type with generic one
-    media_type = 'application/octet-stream'
+    media_type = DEFAULT_TYPE
   end
   local fd = formdata.new()
   fd:set('chat_id', tostring(self.chat_id))
@@ -204,9 +204,7 @@ _M.set_media_type = function(self, media_type)
   if self.upload_type == 'text' then
     media_type = 'text/plain'
   elseif not media_type then
-    media_type = 'application/octet-stream'
-  else
-    media_type = normalize_media_type(media_type)
+    media_type = DEFAULT_TYPE
   end
   log('content media type: %s', media_type)
   self.media_type = media_type
