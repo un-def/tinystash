@@ -30,7 +30,7 @@ docker-load filename:
 
 docker-run tag='latest' port='8880' +args=('-v ' + invocation_directory() + '/config.lua:/opt/tinystash/config.lua'):
   docker run \
-    -d --restart unless-stopped \
+    -d --restart always \
     --log-driver journald \
     -p {{port}}:80 \
     {{ args }} \
