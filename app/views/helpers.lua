@@ -1,4 +1,6 @@
-local template = require('resty.template')
+local process_file = require('resty.template').new({
+  root = 'templates',
+}).process_file
 
 local config = require('app.config')
 
@@ -21,7 +23,7 @@ _M.render_link_factory = function(tiny_id)
   end
 end
 
-local render_to_string = function(template_path, context, plain)
+local render_to_string = function(template_path, context)
   local full_context = {
     link_url_prefix = link_url_prefix,
     url_path_prefix = url_path_prefix,
@@ -34,13 +36,13 @@ local render_to_string = function(template_path, context, plain)
       full_context[k] = v
     end
   end
-  return template.compile(template_path, nil, plain)(full_context)
+  return process_file(template_path, full_context)
 end
 
 _M.render_to_string = render_to_string
 
-_M.render = function(template_path, context, plain)
-  ngx_print(render_to_string(template_path, context, plain))
+_M.render = function(template_path, context)
+  ngx_print(render_to_string(template_path, context))
 end
 
 local markdown_escape_cb = function(char)

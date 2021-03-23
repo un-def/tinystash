@@ -1,4 +1,6 @@
-local compile_template = require('resty.template').compile
+local process_file = require('resty.template').new({
+  root = TINYSTASH_DIR,
+}).process_file
 
 local config = require('app.config').nginx_conf
 
@@ -9,10 +11,6 @@ local NUMBER = type(1)
 local STRING = type('')
 local BOOLEAN = type(true)
 local TABLE = type({})
-
-local fd = assert(io.open(TINYSTASH_DIR .. '/nginx.conf.tpl', 'r'))
-local template = assert(fd:read('*a'))
-fd:close()
 
 local option = function(params)
   local name = params[1]
@@ -80,4 +78,4 @@ local context = {
   lua_code_cache = option{'lua_code_cache', validator = lua_code_cache_validator, default = true},
   client_max_body_size = option{'client_max_body_size', validator = type_validator(STRING, NUMBER)},
 }
-print(compile_template(template, nil, true)(context))
+print(process_file('nginx.conf.tpl', context))

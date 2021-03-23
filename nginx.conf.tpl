@@ -36,7 +36,6 @@ http {
     default_type text/html;
     client_max_body_size {* client_max_body_size *};
     error_page 400 403 404 405 411 413 500 501 502 /error;
-    set $template_root templates;
 
     location /static/ {
       alias ./static/;
@@ -89,11 +88,6 @@ http {
 
     location /error {
       internal;
-      # This redundant declaration is needed for some reason.
-      # Try to execute `GET /` with `content-length:-1` without this line:
-      # > [info] ... client sent invalid "Content-Length" header while reading client request headers
-      # > [warn] ... using uninitialized "template_root" variable while reading client request headers
-      set $template_root templates;
       content_by_lua_block {
         require('app.views').error()
       }
