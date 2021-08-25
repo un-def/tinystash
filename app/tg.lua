@@ -11,6 +11,12 @@ local tg_token = config.tg.token
 local tg_request_timeout_ms = config.tg.request_timeout * 1000
 
 
+local connection_options = {
+  scheme = 'https',
+  host = TG_API_HOST,
+}
+
+
 local _M = {}
 
 _M.prepare_connection = function()
@@ -26,16 +32,13 @@ _M.request_tg_server = function(conn, params, decode_json)
   -- params table mutation!
   params.path = params.path:format(tg_token)
   local res, err
-  res, err = conn:connect(TG_API_HOST, 443)
-  if not res then return nil, err end
-  res, err = conn:ssl_handshake(nil, TG_API_HOST, true)
+  res, err = conn:connect(connection_options)
   if not res then return nil, err end
   res, err = conn:request(params)
   if not res then return nil, err end
   -- don't forget to call :close or :set_keepalive
   if not decode_json then return res end
-  local body
-  body, err = res:read_body()
+  local body, err = res:read_body()   -- luacheck: ignore 411
   conn:set_keepalive()
   if not body then return nil, err end
   return json.decode(body)

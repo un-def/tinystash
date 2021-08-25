@@ -1,4 +1,4 @@
-ledgetech/lua-resty-http=0.14
+ledgetech/lua-resty-http=0.16.1
 bungle/lua-resty-template=2.0
 un-def/lua-basex=0.2.0
 un-def/httoolsp=0.3.0
