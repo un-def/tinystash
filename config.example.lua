@@ -69,6 +69,27 @@ return {
   -- enable direct file upload (e.g., via curl)
   enable_upload_api = true,
 
+  donate = {
+    -- enable donate page
+    enable = false,
+    -- the intro text displayed before blocks, html-formatted
+    -- set to nil to disable
+    intro = '<h1>Please donate</h1>',
+    -- an array of blocks; each block may contain text, text+link, or html
+    blocks = {
+      {
+        text = 'this is a line of text',
+      },
+      {
+        text = 'this is a link to example.com/donate',
+        link = 'https://example.com/donate',
+      },
+      {
+        html = 'this is an <strong>html block</strong>',
+      },
+    },
+  },
+
   -- Google Tag Manager ID (Container ID), string or nil
   gtm_id = nil,
 

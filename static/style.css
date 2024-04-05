@@ -246,6 +246,38 @@ footer .row .bull::before {
   margin-bottom: .3rem;
 }
 
+/*** donate page ***/
+
+.donate-page {
+  margin: 1rem 0 3rem 0;
+}
+
+@media screen and (min-width: 900px) {
+  .donate-page {
+    width: 800px;
+  }
+}
+
+@media screen and (max-width: 900px) {
+  .donate-page {
+    width: 90vw;
+  }
+}
+
+.donate-page .intro {
+  text-align: center;
+  font-size: 1.8rem;
+  line-height: 2.2rem;
+  margin-bottom: 3rem;
+}
+
+.donate-page .block {
+  text-align: center;
+  font-size: 1.5rem;
+  line-height: 2rem;
+  margin-bottom: .5rem;
+}
+
 /*** file links page ***/
 
 @media screen and (max-width: 1200px) {

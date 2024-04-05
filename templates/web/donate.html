@@ -1,0 +1,19 @@
+{% local layout = 'web/layout.html' %}
+<div class="donate-page">
+
+  {% if intro then %}
+    <div class="intro">{* intro *}</div>
+  {% end %}
+  {% for _, block in ipairs(blocks) do %}
+    <div class="block">
+      {% if block.html then %}
+        {* block.html *}
+      {% elseif block.link then %}
+        <a href="{* block.link *}">{{ block.text }}</a>
+      {% else %}
+        {{ block.text }}
+      {% end %}
+    </div>
+  {% end %}
+
+</div>

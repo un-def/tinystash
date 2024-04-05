@@ -54,6 +54,12 @@ http {
       }
     }
 
+    location ~ ^/donate/?$ {
+      content_by_lua_block {
+        require('app.views').donate()
+      }
+    }
+
     location ~ ^/docs/api/?$ {
       content_by_lua_block {
         require('app.views').docs_api()
