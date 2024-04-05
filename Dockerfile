@@ -20,5 +20,5 @@ EXPOSE 80
 ENTRYPOINT ["./tinysta.sh"]
 CMD ["run"]
 
-LABEL maintainer="un.def <me@undef.im>"
-LABEL version="2.2.0"
+LABEL maintainer="Dmitry Meyer <me@undef.im>"
+LABEL version="2.3.0"
