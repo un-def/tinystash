@@ -12,14 +12,18 @@ local STRING = type('')
 local BOOLEAN = type(true)
 local TABLE = type({})
 
+local NIL = {}
+
 local option = function(params)
   local name = params[1]
   local value = config[name]
   if value == nil then
-    if params.default then
-      value = params.default
-    else
+    if params.default == nil then
       error(("missing required option '%s'"):format(name))
+    elseif params.default == NIL then
+      value = nil
+    else
+      value = params.default
     end
   elseif params.validator then
     local err
@@ -67,7 +71,7 @@ end
 
 local context = {
   worker_processes = option{'worker_processes', validator = worker_processes_validator, default = 'auto'},
-  worker_connections = option{'worker_connections', validator = type_validator(NUMBER)},
+  worker_connections = option{'worker_connections', validator = type_validator(NUMBER), default = NIL},
   error_log = option{'error_log', validator = type_validator(TABLE), default = {}},
   resolver = option{'resolver', validator = type_validator(STRING)},
   lua_ssl_trusted_certificate = option{'lua_ssl_trusted_certificate', validator = type_validator(STRING)},

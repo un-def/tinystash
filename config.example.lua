@@ -33,8 +33,8 @@ return {
     listen = 80,
     -- (int | 'auto', optional, default is 'auto')
     worker_processes = 'auto',
-    -- (int, required)
-    worker_connections = 1024,
+    -- (int, optional)
+    worker_connections = nil,
     -- (string, required) 20 MiB getFile API method limit + 10% (multipart/form-data overhead)
     client_max_body_size = '22M',
     -- (array of strings, optional)

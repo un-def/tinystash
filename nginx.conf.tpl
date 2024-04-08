@@ -7,7 +7,9 @@ error_log {* line *};
 {% end %}
 
 events {
+  {% if worker_connections then %}
   worker_connections {* worker_connections *};
+  {% end %}
 }
 
 env TINYSTASH_CONFIG_PATH;
