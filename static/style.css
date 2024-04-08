@@ -79,6 +79,10 @@ h6 {
   margin: 2.5rem 0;
 }
 
+.monospace {
+  font-family: 'Source Code Pro', monospace;
+}
+
 code {
   font-family: 'Source Code Pro', monospace;
   font-size: .8em;
@@ -264,17 +268,17 @@ footer .row .bull::before {
   }
 }
 
-.donate-page .intro {
+.donate-page {
+  font-size: 1.4rem;
+  line-height: 2rem;
   text-align: center;
-  font-size: 1.8rem;
-  line-height: 2.2rem;
+}
+
+.donate-page .intro {
   margin-bottom: 3rem;
 }
 
 .donate-page .block {
-  text-align: center;
-  font-size: 1.5rem;
-  line-height: 2rem;
   margin-bottom: .5rem;
 }
 
