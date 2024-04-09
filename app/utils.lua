@@ -254,4 +254,24 @@ _M.guess_extension = function(params)
   return ext
 end
 
+_M.format_file_size = function(size)
+  if size == 1 then
+    return '1 byte'
+  end
+  local byte_size = ('%d bytes'):format(size)
+  if size < 1024 then
+    return byte_size
+  end
+  local unit
+  local unit_size
+  if size < 1048576 then
+    unit = 'kiB'
+    unit_size = size / 1024
+  else
+    unit = 'MiB'
+    unit_size = size / 1048576
+  end
+  return ('%.1f %s (%s)'):format(unit_size, unit, byte_size)
+end
+
 return _M

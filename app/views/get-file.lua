@@ -32,6 +32,7 @@ local escape_uri = utils.escape_uri
 local unescape_ext = utils.unescape_ext
 local guess_extension = utils.guess_extension
 local parse_media_type = utils.parse_media_type
+local format_file_size = utils.format_file_size
 
 local prepare_connection = tg.prepare_connection
 local request_tg_server = tg.request_tg_server
@@ -120,7 +121,7 @@ return {
     if mode == GET_FILE_MODES.LINKS then
       render('web/file-links.html', {
         title = tiny_id,
-        file_size = file_size,
+        file_size = format_file_size(file_size),
         media_type = media_type,
         modes = GET_FILE_MODES,
         render_link = render_link_factory(tiny_id),
