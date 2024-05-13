@@ -1,4 +1,4 @@
-FROM openresty/openresty:alpine AS builder
+FROM openresty/openresty:alpine-apk AS builder
 WORKDIR /opt/tinystash/
 RUN apk add --no-cache curl perl
 COPY requirements.opm /tmp/requirements.opm
@@ -10,7 +10,7 @@ COPY commands/ commands/
 COPY tinysta.sh tinysta.sh
 COPY nginx.conf.tpl nginx.conf.tpl
 
-FROM openresty/openresty:alpine
+FROM openresty/openresty:alpine-apk
 WORKDIR /opt/tinystash/
 RUN apk add --no-cache ca-certificates
 COPY --from=builder /opt/tinystash/ ./
