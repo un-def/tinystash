@@ -1,4 +1,4 @@
-FROM openresty/openresty:alpine-apk AS builder
+FROM openresty/openresty:alpine AS builder
 WORKDIR /opt/tinystash/
 RUN apk add --no-cache curl perl
 COPY requirements.opm /tmp/requirements.opm
