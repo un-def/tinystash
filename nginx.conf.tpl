@@ -1,6 +1,7 @@
 daemon off;
 worker_processes {* worker_processes *};
 pid nginx.pid;
+pcre_jit on;
 
 {% for _, line in ipairs(error_log) do %}
 error_log {* line *};
@@ -16,6 +17,7 @@ env TINYSTASH_CONFIG_PATH;
 
 http {
   server_tokens off;
+  sendfile on;
 
   resolver {* resolver *};
   lua_ssl_trusted_certificate {* lua_ssl_trusted_certificate *};
