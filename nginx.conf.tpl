@@ -18,6 +18,7 @@ env TINYSTASH_CONFIG_PATH;
 http {
   server_tokens off;
   sendfile on;
+  absolute_redirect off;
 
   resolver {* resolver *};
   lua_ssl_trusted_certificate {* lua_ssl_trusted_certificate *};
