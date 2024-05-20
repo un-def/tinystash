@@ -2,7 +2,7 @@ FROM openresty/openresty:alpine AS builder
 WORKDIR /opt/tinystash/
 RUN apk add --no-cache curl perl
 COPY requirements.opm /tmp/requirements.opm
-RUN while read dep; do opm --cwd get "$dep"; done < /tmp/requirements.opm
+RUN opm --cwd get $(cat /tmp/requirements.opm)
 COPY app/ app/
 COPY static/ static/
 COPY templates/ templates/

@@ -7,7 +7,7 @@ sudo +args:
   @sudo --preserve-env=PATH env just {{args}}
 
 install-deps:
-  @while read dep; do opm --cwd get "$dep"; done < requirements.opm
+  opm --cwd get $(cat requirements.opm)
 
 lint:
   luacheck .
