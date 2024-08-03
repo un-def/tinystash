@@ -1,3 +1,9 @@
+.*
+!.gitignore
+!.dockerignore
+!.editorconfig
+!.luacheckrc
+
 *_temp/
 logs/
 resty_modules/
