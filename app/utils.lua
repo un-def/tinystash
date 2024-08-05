@@ -6,6 +6,7 @@ local constants = require('app.constants')
 local mediatypes = require('app.mediatypes')
 
 
+local string_format = string.format
 local debug_getinfo = debug.getinfo
 local ngx_exec = ngx.exec
 local ngx_DEBUG = ngx.DEBUG
@@ -35,6 +36,20 @@ local LOG_LEVEL_NAMES = {
 
 local _M = {}
 
+local _error_mt = {
+  __tostring = function(self)
+    return string_format('%s: %s', self._prefix, self._error)
+  end,
+}
+
+_M.wrap_error = function(prefix, error)
+  local error_t = {
+    _prefix = prefix,
+    _error = error,
+  }
+  return setmetatable(error_t, _error_mt)
+end
+
 _M.log = function(...)
   local level, message = ...
   local args_offset
@@ -45,8 +60,8 @@ _M.log = function(...)
   else
     args_offset = 3
   end
-  if select('#', ...) - args_offset > -1 then
-    message = tostring(message):format(select(args_offset, ...))
+  if select('#', ...) >= args_offset then
+    message = string_format(message, select(args_offset, ...))
   end
   local info = debug_getinfo(2, 'Sln')
   message = ('%s:%s: %s:\n\n*** [%s] %s\n'):format(

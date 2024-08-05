@@ -3,12 +3,19 @@ local json = require('cjson.safe')
 
 local constants = require('app.constants')
 local config = require('app.config')
+local utils = require('app.utils')
 
 local TG_API_HOST = constants.TG_API_HOST
 local TG_TYPES = constants.TG_TYPES
 local TG_TYPE_PHOTO = TG_TYPES.PHOTO
 local tg_token = config.tg.token
 local tg_request_timeout_ms = config.tg.request_timeout * 1000
+local wrap_error = utils.wrap_error
+local log = utils.log
+
+
+local string_format = string.format
+local ngx_WARN = ngx.WARN
 
 
 local connection_options = {
@@ -33,15 +40,34 @@ _M.request_tg_server = function(conn, params, decode_json)
   params.path = params.path:format(tg_token)
   local res, err
   res, err = conn:connect(connection_options)
-  if not res then return nil, err end
+  if not res then
+    return nil, wrap_error('connect error', err)
+  end
   res, err = conn:request(params)
-  if not res then return nil, err end
+  if not res then
+    return nil, wrap_error('request error', err)
+  end
+  local status = res.status
+  if status < 200 or status > 299 then
+    log(ngx_WARN, 'unexpected tg response status: %d', status)
+  end
   -- don't forget to call :close or :set_keepalive
-  if not decode_json then return res end
+  if not decode_json then
+    return res
+  end
   local body, err = res:read_body()   -- luacheck: ignore 411
   conn:set_keepalive()
-  if not body then return nil, err end
-  return json.decode(body)
+  if not body then
+    return nil, wrap_error('read body error', err)
+  end
+  if body == '' then
+    return nil, string_format('%d: empty response body', status)
+  end
+  res, err = json.decode(body)
+  if not res then
+    return nil, wrap_error('response decode error', err)
+  end
+  return res
 end
 
 _M.get_file_from_message = function(message)
