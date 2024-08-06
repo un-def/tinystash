@@ -147,8 +147,10 @@ end
 _M.get_content_iterator = function(self, initial)
   local form = self.form
   local initial_sent = false
-  return function()
-    if not initial_sent and initial then
+  local empty_chunk_seen = false
+  local iterator
+  iterator = function()
+    if not initial_sent then
       initial_sent = true
       -- first chunk of the file
       return initial
@@ -157,6 +159,16 @@ _M.get_content_iterator = function(self, initial)
     if not token then
       return nil, format_error('failed to read next form chunk', err)
     elseif token == 'body' then
+      if #data == 0 then
+        -- if file size % CHUNK_SIZE == 0, form:read() returns an empty string;
+        -- we discard this chunk and expect 'part_end' token on the next iteration
+        if empty_chunk_seen then
+          return nil, format_error('two empty chunks in a row, part_end expected')
+        end
+        empty_chunk_seen = true
+        return iterator()
+      end
+      empty_chunk_seen = false
       return data
     elseif token == 'part_end' then
       return nil
@@ -164,6 +176,7 @@ _M.get_content_iterator = function(self, initial)
       return nil, format_error('unexpected token', token)
     end
   end
+  return iterator
 end
 
 
