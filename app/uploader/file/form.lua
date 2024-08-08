@@ -3,7 +3,7 @@ local parse_header = require('httoolsp.headers').parse_header
 
 local utils = require('app.utils')
 local constants = require('app.constants')
-local base_uploader = require('app.uploader.base')
+local base_file_uploader = require('app.uploader.file.base')
 
 
 local ngx_null = ngx.null
@@ -14,16 +14,12 @@ local log = utils.log
 local format_error = utils.format_error
 
 local CHUNK_SIZE = constants.CHUNK_SIZE
+local CSRFTOKEN_FIELD_NAME = constants.CSRFTOKEN_FIELD_NAME
 
 
-local CSRFTOKEN_FIELD_NAME = 'csrftoken'
-
-
-local _M = setmetatable({}, base_uploader)
+local _M = setmetatable({}, base_file_uploader)
 
 _M.__index = _M
-
-_M.CSRFTOKEN_FIELD_NAME = CSRFTOKEN_FIELD_NAME
 
 _M.new = function(_, upload_type, chat_id, headers)
   local cookie = headers['cookie']

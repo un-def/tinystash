@@ -3,9 +3,10 @@ local parse_accept_header = require('httoolsp.headers').parse_accept_header
 
 local tinyid = require('app.tinyid')
 local utils = require('app.utils')
+local constants = require('app.constants')
 local helpers = require('app.views.helpers')
-local form_uploader = require('app.uploader.form')
-local direct_uploader = require('app.uploader.direct')
+local file_form_uploader = require('app.uploader.file.form')
+local file_direct_uploader = require('app.uploader.file.direct')
 local config = require('app.config')
 
 
@@ -35,7 +36,7 @@ local get_media_type_id = utils.get_media_type_id
 local render_link_factory = helpers.render_link_factory
 local render = helpers.render
 
-local CSRFTOKEN_FIELD_NAME = form_uploader.CSRFTOKEN_FIELD_NAME
+local CSRFTOKEN_FIELD_NAME = constants.CSRFTOKEN_FIELD_NAME
 
 
 local err_code_to_log_level = function(err_code)
@@ -107,9 +108,9 @@ return {
 
     local uploader_type
     if direct_upload_json or direct_upload_plain then
-      uploader_type = direct_uploader
+      uploader_type = file_direct_uploader
     else
-      uploader_type = form_uploader
+      uploader_type = file_form_uploader
     end
 
     local uploader, err_code, err = uploader_type:new(upload_type, tg_upload_chat_id, headers)
