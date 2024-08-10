@@ -34,7 +34,6 @@ mixin.upload = function(self, url)
     return nil, ngx_HTTP_BAD_GATEWAY
   end
   self.conn = conn
-
   local body = json_encode{
     chat_id = self.chat_id,
     document = url,

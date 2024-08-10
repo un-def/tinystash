@@ -2,12 +2,12 @@ local utils = require('app.utils')
 local base = require('app.uploader.base')
 local url_mixin = require('app.uploader.url.mixin')
 
-local string_match = string.match
 local ngx_HTTP_FORBIDDEN = ngx.HTTP_FORBIDDEN
 local ngx_HTTP_BAD_REQUEST = ngx.HTTP_BAD_REQUEST
 local ngx_req = ngx.req
 
 local log = utils.log
+local is_http_url = utils.is_http_url
 
 
 local uploader = base.build_uploader(url_mixin, base.form_mixin, base.uploader)
@@ -49,7 +49,7 @@ uploader.run = function(self)
   elseif type(url) == 'table' then
     log('multiple url fields')
     return nil, ngx_HTTP_BAD_REQUEST
-  elseif not string_match(url, '^https?://') then
+  elseif not is_http_url(url) then
     log('invalid url')
     return nil, ngx_HTTP_BAD_REQUEST, 'invalid URL'
   end

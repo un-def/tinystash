@@ -6,6 +6,7 @@ local constants = require('app.constants')
 local mediatypes = require('app.mediatypes')
 
 
+local string_match = string.match
 local string_format = string.format
 local debug_getinfo = debug.getinfo
 local ngx_exec = ngx.exec
@@ -101,6 +102,10 @@ _M.decode_urlsafe_base64 = function(to_decode)
     return nil, 'base64 decode error'
   end
   return decoded
+end
+
+_M.is_http_url = function(str)
+  return string_match(str, '^https?://.+') ~= nil
 end
 
 _M.escape_uri = function(uri, escape_slashes)

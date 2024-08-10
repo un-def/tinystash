@@ -119,9 +119,9 @@ return {
     local uploader_type
     if direct_upload_json or direct_upload_plain then
       if upload_type == 'url' then
-        uploader_type = file_direct_uploader
-      else
         uploader_type = url_direct_uploader
+      else
+        uploader_type = file_direct_uploader
       end
     else
       if upload_type == 'url' then
