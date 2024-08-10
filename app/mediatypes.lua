@@ -32,8 +32,10 @@ local MEDIA_TYPES = {
   -- video types
   [17] = {'video/mp4', 'mp4'},
   [18] = {'video/webm', 'webm'},
+  [22] = {'video/matroska', 'mkv'},
+  [23] = {'video/quicktime', 'mov'},
 
-  -- [22] = {},   -- next index
+  -- [24] = {},   -- next index
 }
 
 
