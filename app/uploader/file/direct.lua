@@ -1,6 +1,6 @@
 local constants = require('app.constants')
 local utils = require('app.utils')
-local base_file_uploader = require('app.uploader.file.base')
+local base_uploader = require('app.uploader.base')
 
 local req_socket = ngx.req.socket
 local ngx_HTTP_BAD_REQUEST = ngx.HTTP_BAD_REQUEST
@@ -14,10 +14,10 @@ local format_error = utils.format_error
 
 local maximum_file_size_err = (
   'declared content-length is too big - maximum file size is %s'
-):format(base_file_uploader.MAX_FILE_SIZE)
+):format(base_uploader.MAX_FILE_SIZE)
 
 
-local _M = setmetatable({}, base_file_uploader)
+local _M = setmetatable({}, base_uploader)
 
 _M.__index = _M
 
@@ -41,7 +41,7 @@ _M.new = function(_, upload_type, chat_id, headers)
     return nil, ngx_HTTP_BAD_REQUEST, 'invalid content-length header'
   elseif content_length <= 0 then
     return nil, ngx_HTTP_BAD_REQUEST, 'content-length header value is 0'
-  elseif base_file_uploader:is_max_file_size_exceeded(content_length) then
+  elseif base_uploader:is_max_file_size_exceeded(content_length) then
     return nil, 413, maximum_file_size_err
   end
   local instance = setmetatable({

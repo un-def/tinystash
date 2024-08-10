@@ -3,7 +3,7 @@ local parse_header = require('httoolsp.headers').parse_header
 
 local utils = require('app.utils')
 local constants = require('app.constants')
-local base_file_uploader = require('app.uploader.file.base')
+local base_uploader = require('app.uploader.base')
 
 
 local ngx_null = ngx.null
@@ -17,7 +17,7 @@ local CHUNK_SIZE = constants.CHUNK_SIZE
 local CSRFTOKEN_FIELD_NAME = constants.CSRFTOKEN_FIELD_NAME
 
 
-local _M = setmetatable({}, base_file_uploader)
+local _M = setmetatable({}, base_uploader)
 
 _M.__index = _M
 
@@ -174,6 +174,5 @@ _M.get_content_iterator = function(self, initial)
   end
   return iterator
 end
-
 
 return _M
