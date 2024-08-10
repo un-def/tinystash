@@ -74,11 +74,7 @@ uploader.run = function(self)
     log('invalid url')
     return nil, ngx_HTTP_BAD_REQUEST
   end
-  local file_object, err_code = self:upload(url)
-  if not file_object then
-    return nil, err_code
-  end
-  return file_object
+  return self:upload(url)
 end
 
 uploader.parse_form = function(_self)
