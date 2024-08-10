@@ -39,7 +39,7 @@ http {
     access_log {* access_log *};
     lua_code_cache {* lua_code_cache *};
     default_type text/html;
-    client_max_body_size {* client_max_body_size *};
+    client_max_body_size 8k;
     error_page 400 403 404 405 411 413 500 501 502 /error;
 
     location /static/ {
@@ -78,6 +78,7 @@ http {
     }
 
     location ~ ^/webhook/(?P<secret>[a-zA-Z0-9:_-]+)/?$ {
+      client_max_body_size 256k;
       content_by_lua_block {
         require('app.views').webhook(ngx.var.secret)
       }
@@ -88,8 +89,16 @@ http {
     }
 
     location ~ ^/upload/(?P<type>file|text)/?$ {
+      client_max_body_size {* client_max_body_size *};
       content_by_lua_block {
         require('app.views').upload(ngx.var.type)
+      }
+    }
+
+    location ~ ^/upload/url/?$ {
+      client_max_body_size 8k;
+      content_by_lua_block {
+        require('app.views').upload('url')
       }
     }
 

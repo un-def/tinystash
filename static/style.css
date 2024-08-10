@@ -402,9 +402,15 @@ footer .row .bull::before {
 }
 
 .upload-page .upload-form input[type="file"] {
-  width: 20rem;
+  width: 40rem;
   max-width: 70vw;
   background: #fafafa;
+  margin-right: .2rem;
+}
+
+.upload-page .upload-form input[type="url"] {
+  width: 40rem;
+  max-width: 70vw;
   margin-right: .2rem;
 }
 

@@ -1,6 +1,7 @@
 local constants = require('app.constants')
 local utils = require('app.utils')
-local base_uploader = require('app.uploader.base')
+local base = require('app.uploader.base')
+local file_mixin = require('app.uploader.file.mixin')
 
 local req_socket = ngx.req.socket
 local ngx_HTTP_BAD_REQUEST = ngx.HTTP_BAD_REQUEST
@@ -12,18 +13,16 @@ local DOWNSTREAM_TIMEOUT = constants.DOWNSTREAM_TIMEOUT
 local log = utils.log
 local format_error = utils.format_error
 
+
 local maximum_file_size_err = (
   'declared content-length is too big - maximum file size is %s'
-):format(base_uploader.MAX_FILE_SIZE)
+):format(base.uploader.MAX_FILE_SIZE)
 
+local uploader = base.build_uploader(file_mixin, base.uploader)
 
-local _M = setmetatable({}, base_uploader)
-
-_M.__index = _M
-
-_M.new = function(_, upload_type, chat_id, headers)
+uploader.new = function(_, upload_type, chat_id, headers)
   -- sets:
-  --    self.media_type: string (via set_media_type)
+  --    self.media_type: string
   local transfer_encoding = headers['transfer-encoding']
   if transfer_encoding ~= nil then
     -- nginx will terminate a request early with 501 Not Implemented
@@ -41,20 +40,20 @@ _M.new = function(_, upload_type, chat_id, headers)
     return nil, ngx_HTTP_BAD_REQUEST, 'invalid content-length header'
   elseif content_length <= 0 then
     return nil, ngx_HTTP_BAD_REQUEST, 'content-length header value is 0'
-  elseif base_uploader:is_max_file_size_exceeded(content_length) then
+  elseif base.uploader:is_max_file_size_exceeded(content_length) then
     return nil, 413, maximum_file_size_err
   end
   local instance = setmetatable({
     upload_type = upload_type,
     chat_id = chat_id,
     expected_content_length = content_length,
-  }, _M)
+  }, uploader)
   instance:set_media_type(headers['content-type'])
   instance:set_filename(instance.media_type)
   return instance
 end
 
-_M.run = function(self)
+uploader.run = function(self)
   -- sets:
   --    self.bytes_uploaded: int (via upload)
   --    self.conn: http connection (via upload)
@@ -79,7 +78,7 @@ _M.run = function(self)
   return file_object
 end
 
-_M.get_content_iterator = function(self)
+uploader.get_content_iterator = function(self)
   local sock = self.request_socket
   local done = false
   return function()
@@ -106,4 +105,4 @@ _M.get_content_iterator = function(self)
   end
 end
 
-return _M
+return uploader

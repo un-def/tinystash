@@ -7,6 +7,8 @@ local constants = require('app.constants')
 local helpers = require('app.views.helpers')
 local file_form_uploader = require('app.uploader.file.form')
 local file_direct_uploader = require('app.uploader.file.direct')
+local url_form_uploader = require('app.uploader.url.form')
+local url_direct_uploader = require('app.uploader.url.direct')
 local config = require('app.config')
 
 
@@ -63,6 +65,7 @@ return {
   end,
 
   GET = function(upload_type)
+    -- upload_type: file | text | url
     local path = ngx_var.request_uri
     local args_idx = path:find('?', 2, true)
     if args_idx then
@@ -74,8 +77,15 @@ return {
     local csrftoken = generate_random_hex_string(16)
     ngx_header['set-cookie'] = ('%s=%s; Path=%s%s; HttpOnly; SameSite=Strict'):format(
       CSRFTOKEN_FIELD_NAME, csrftoken, url_path_prefix, path)
+    local enctype
+    if upload_type == 'url' then
+      enctype = 'application/x-www-form-urlencoded'
+    else
+      enctype = 'multipart/form-data'
+    end
     render('web/upload.html', {
       upload_type = upload_type,
+      enctype = enctype,
       csrftoken = csrftoken,
       csrftoken_field = CSRFTOKEN_FIELD_NAME,
       content_field = upload_type,
@@ -108,9 +118,17 @@ return {
 
     local uploader_type
     if direct_upload_json or direct_upload_plain then
-      uploader_type = file_direct_uploader
+      if upload_type == 'url' then
+        uploader_type = file_direct_uploader
+      else
+        uploader_type = url_direct_uploader
+      end
     else
-      uploader_type = file_form_uploader
+      if upload_type == 'url' then
+        uploader_type = url_form_uploader
+      else
+        uploader_type = file_form_uploader
+      end
     end
 
     local uploader, err_code, err = uploader_type:new(upload_type, tg_upload_chat_id, headers)

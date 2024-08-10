@@ -3,8 +3,8 @@ local parse_header = require('httoolsp.headers').parse_header
 
 local utils = require('app.utils')
 local constants = require('app.constants')
-local base_uploader = require('app.uploader.base')
-
+local base = require('app.uploader.base')
+local file_mixin = require('app.uploader.file.mixin')
 
 local ngx_null = ngx.null
 local ngx_HTTP_FORBIDDEN = ngx.HTTP_FORBIDDEN
@@ -17,28 +17,16 @@ local CHUNK_SIZE = constants.CHUNK_SIZE
 local CSRFTOKEN_FIELD_NAME = constants.CSRFTOKEN_FIELD_NAME
 
 
-local _M = setmetatable({}, base_uploader)
+local uploader = base.build_uploader(file_mixin, base.form_mixin, base.uploader)
 
-_M.__index = _M
-
-_M.new = function(_, upload_type, chat_id, headers)
-  local cookie = headers['cookie']
-  if not cookie then
-    log('no cookie header')
-    return nil, ngx_HTTP_BAD_REQUEST
-  end
-  local csrftoken
-  for key, value in cookie:gmatch('([^%c%s;]+)=([^%c%s;]+)') do
-    if key == CSRFTOKEN_FIELD_NAME then
-      csrftoken = value
-      break
-    end
-  end
+uploader.new = function(self, upload_type, chat_id, headers)
+  local csrftoken, err = self:extract_csrftoken_from_cookies(headers)
   if not csrftoken then
-    log('no csrftoken cookie')
+    log(err)
     return nil, ngx_HTTP_BAD_REQUEST
   end
-  local form, err = upload:new(CHUNK_SIZE)
+  local form
+  form, err = upload:new(CHUNK_SIZE)
   if not form then
     log('resty.upload:new() error: %s', err)
     return nil, ngx_HTTP_BAD_REQUEST
@@ -50,16 +38,16 @@ _M.new = function(_, upload_type, chat_id, headers)
     chat_id = chat_id,
     csrftoken = csrftoken,
     form = form,
-  }, _M)
+  }, uploader)
 end
 
-_M.run = function(self)
+uploader.run = function(self)
   -- sets:
-  --    self.media_type: string (via set_media_type)
+  --    self.media_type: string
   --    self.bytes_uploaded: int (via upload)
   --    self.conn: http connection (via upload)
   local csrftoken, file_object
-  local res, err, err_code
+  local ok, res, err, err_code
   while true do
     res, err = self:handle_form_field()
     if not res then
@@ -72,8 +60,9 @@ _M.run = function(self)
       local field_name, filename, media_type, initial_data = unpack(res)
       if field_name == CSRFTOKEN_FIELD_NAME then
         csrftoken = initial_data
-        if csrftoken ~= self.csrftoken then
-          log('invalid csrf token')
+        ok, err = self:check_csrftoken(csrftoken)
+        if not ok then
+          log(err)
           return nil, ngx_HTTP_FORBIDDEN
         end
       elseif field_name == self.content_field then
@@ -93,20 +82,19 @@ _M.run = function(self)
       end
     end
   end
-  if not csrftoken then
-    log('no csrf token')
+  ok, err = self:check_csrftoken(csrftoken)
+  if not ok then
+    log(err)
     return nil, ngx_HTTP_FORBIDDEN
-  elseif csrftoken ~= self.csrftoken then
-    log('invalid csrf token')
-    return nil, ngx_HTTP_FORBIDDEN
-  elseif not file_object then
+  end
+  if not file_object then
     log('no content')
     return nil, ngx_HTTP_BAD_REQUEST
   end
   return file_object
 end
 
-_M.handle_form_field = function(self)
+uploader.handle_form_field = function(self)
   -- returns:
   --    if eof: ngx.null
   --    if body (any): table {field_name, filename, media_type, initial_data}
@@ -140,7 +128,7 @@ _M.handle_form_field = function(self)
   end
 end
 
-_M.get_content_iterator = function(self, initial)
+uploader.get_content_iterator = function(self, initial)
   local form = self.form
   local initial_sent = false
   local empty_chunk_seen = false
@@ -175,4 +163,4 @@ _M.get_content_iterator = function(self, initial)
   return iterator
 end
 
-return _M
+return uploader
