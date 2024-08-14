@@ -6,12 +6,13 @@ local constants = require('app.constants')
 local base = require('app.uploader.base')
 local file_mixin = require('app.uploader.file.mixin')
 
+local string_format = string.format
 local ngx_null = ngx.null
 local ngx_HTTP_FORBIDDEN = ngx.HTTP_FORBIDDEN
 local ngx_HTTP_BAD_REQUEST = ngx.HTTP_BAD_REQUEST
 
 local log = utils.log
-local format_error = utils.format_error
+local wrap_error = utils.wrap_error
 
 local CHUNK_SIZE = constants.CHUNK_SIZE
 local CSRFTOKEN_FIELD_NAME = constants.CSRFTOKEN_FIELD_NAME
@@ -141,13 +142,13 @@ uploader.get_content_iterator = function(self, initial)
     end
     local token, data, err = form:read()
     if not token then
-      return nil, format_error('failed to read next form chunk', err)
+      return nil, wrap_error('failed to read next form chunk', err)
     elseif token == 'body' then
       if #data == 0 then
         -- if file size % CHUNK_SIZE == 0, form:read() returns an empty string;
         -- we discard this chunk and expect 'part_end' token on the next iteration
         if empty_chunk_seen then
-          return nil, format_error('two empty chunks in a row, part_end expected')
+          return nil, 'two empty chunks in a row, part_end expected'
         end
         empty_chunk_seen = true
         return iterator()
@@ -157,7 +158,7 @@ uploader.get_content_iterator = function(self, initial)
     elseif token == 'part_end' then
       return nil
     else
-      return nil, format_error('unexpected token', token)
+      return nil, string_format('unexpected token: %s', token)
     end
   end
   return iterator

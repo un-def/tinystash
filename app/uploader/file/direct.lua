@@ -11,7 +11,7 @@ local CHUNK_SIZE = constants.CHUNK_SIZE
 local DOWNSTREAM_TIMEOUT = constants.DOWNSTREAM_TIMEOUT
 
 local log = utils.log
-local format_error = utils.format_error
+local wrap_error = utils.wrap_error
 
 
 local maximum_file_size_err = (
@@ -100,7 +100,7 @@ uploader.get_content_iterator = function(self)
       done = true
       return partial
     else
-      return nil, format_error('socket error', err)
+      return nil, wrap_error('socket error', err)
     end
   end
 end

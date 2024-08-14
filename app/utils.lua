@@ -39,7 +39,11 @@ local _M = {}
 
 local _error_mt = {
   __tostring = function(self)
-    return string_format('%s: %s', self._prefix, self._error)
+    local error = self._error
+    if error == nil then
+      return self._prefix
+    end
+    return string_format('%s: %s', self._prefix, error)
   end,
 }
 
@@ -73,13 +77,6 @@ end
 
 _M.error = function(status, description)
   return ngx_exec('/error', {status = status, description = description})
-end
-
-_M.format_error = function(preamble, error)
-  if not error then
-    return preamble
-  end
-  return ('%s: %s'):format(preamble, error)
 end
 
 _M.generate_random_hex_string = function(size)
