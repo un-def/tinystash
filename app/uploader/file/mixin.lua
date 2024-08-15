@@ -10,9 +10,8 @@ local ngx_HTTP_BAD_GATEWAY = ngx.HTTP_BAD_GATEWAY
 local ngx_ERR = ngx.ERR
 local ngx_INFO = ngx.INFO
 
-local prepare_connection = tg.prepare_connection
-local request_tg_server = tg.request_tg_server
 local get_file_from_message = tg.get_file_from_message
+local tg_client = tg.client
 
 local log = utils.log
 
@@ -26,15 +25,10 @@ mixin.upload = function(self, content)
   --    if ok: TG API object (Document/Video/...) table with mandatory 'file_id' field
   --    if error: nil, error_code
   -- sets:
-  --    self.conn: table -- http connection
+  --    self.client: tg.client
   --    self.bytes_uploaded: int (via _get_content_iterator closure)
-  local conn, res, err
-  conn, err = prepare_connection()
-  if not conn then
-    log(ngx_ERR, 'tg api connection error: %s', err)
-    return nil, ngx_HTTP_BAD_GATEWAY
-  end
-  self.conn = conn
+  local client = tg_client()
+  self.client = client
   local media_type = self.media_type
   -- avoid automatic gif -> mp4 conversion by tricking Telegram
   if media_type == 'image/gif' then
@@ -44,35 +38,32 @@ mixin.upload = function(self, content)
   local fd = formdata.new()
   fd:set('chat_id', tostring(self.chat_id))
   fd:set('document', self:_get_content_iterator(content), media_type, self.filename)
-  local params = {
-    path = '/bot%s/sendDocument',
-    method = 'POST',
+  local resp, err = client:send_document({
     headers = {
       ['content-type'] = 'multipart/form-data; boundary=' .. fd:get_boundary(),
       ['transfer-encoding'] = 'chunked',
     },
     body = self:_get_chunked_body_iterator(fd:iterator()),
-  }
-  res, err = request_tg_server(conn, params, true)
+  })
   -- _get_content_iterator closure sets self._content_iterator_error to indicate error
   -- while reading content from request
   if self._content_iterator_error then
     return nil, ngx_HTTP_BAD_REQUEST
   end
-  if not res then
+  if err then
     log(ngx_ERR, 'tg api request error: %s', err)
     return nil, ngx_HTTP_BAD_GATEWAY
   end
-  if not res.ok then
-    log(ngx_INFO, 'tg api response is not "ok": %s', res.description)
+  if not resp.ok then
+    log(ngx_INFO, 'tg api response is not "ok": %s', resp.description)
     return nil, ngx_HTTP_BAD_GATEWAY
   end
-  if not res.result then
+  if not resp.result then
     log(ngx_INFO, 'tg api response has no "result"')
     return nil, ngx_HTTP_BAD_GATEWAY
   end
   local file
-  file, err = get_file_from_message(res.result)
+  file, err = get_file_from_message(resp.result)
   if not file then
     log(ngx_INFO, err)
     return nil, ngx_HTTP_BAD_GATEWAY

@@ -11,14 +11,13 @@ local DEFAULT_MEDIA_TYPE = require('app.mediatypes').DEFAULT_TYPE
 local string_match = string.match
 local string_format = string.format
 
+local ngx_var = ngx.var
 local ngx_print = ngx.print
 local ngx_header = ngx.header
 local ngx_exit = ngx.exit
 local ngx_req = ngx.req
-local ngx_req_get_headers = ngx_req.get_headers
 local ngx_INFO = ngx.INFO
 local ngx_ERR = ngx.ERR
-local ngx_HTTP_OK = ngx.HTTP_OK
 local ngx_HTTP_NOT_MODIFIED = ngx.HTTP_NOT_MODIFIED
 local ngx_HTTP_NOT_FOUND = ngx.HTTP_NOT_FOUND
 local ngx_HTTP_BAD_GATEWAY = ngx.HTTP_BAD_GATEWAY
@@ -34,8 +33,7 @@ local guess_extension = utils.guess_extension
 local parse_media_type = utils.parse_media_type
 local format_file_size = utils.format_file_size
 
-local prepare_connection = tg.prepare_connection
-local request_tg_server = tg.request_tg_server
+local tg_client = tg.client
 
 local render_link_factory = helpers.render_link_factory
 local render = helpers.render
@@ -79,31 +77,20 @@ return {
       log(ngx_INFO, 'tiny_id decode error: %s', tiny_id_err)
       return error(ngx_HTTP_NOT_FOUND)
     end
-
-    local conn, res, err, params
-    conn, err = prepare_connection()
-    if not conn then
-      log(ngx_ERR, 'tg api connection error: %s', err)
-      return error(ngx_HTTP_BAD_GATEWAY)
-    end
-
     -- get file info
-    params = {
-      path = '/bot%s/getFile',
-      query = 'file_id=' .. tiny_id_params.file_id,
-    }
-    res, err = request_tg_server(conn, params, true)
-    if not res then
+    local client = tg_client()
+    local resp, err = client:get_file(tiny_id_params.file_id)
+    client:close()
+    if err then
       log(ngx_ERR, 'tg api request error: %s', err)
       return error(ngx_HTTP_BAD_GATEWAY)
     end
-    if not res.ok then
-      log(ngx_INFO, 'tg api response is not "ok": %s', res.description)
+    if not resp.ok then
+      log(ngx_INFO, 'tg api response is not "ok": %s', resp.description)
       return error(ngx_HTTP_NOT_FOUND)
     end
-
-    local file_path = res.result.file_path
-    local file_size = res.result.file_size
+    local file_path = resp.result.file_path
+    local file_size = resp.result.file_size
     local media_type = tiny_id_params.media_type or DEFAULT_MEDIA_TYPE
     local extension
     -- fix voice message file .oga extension
@@ -133,32 +120,21 @@ return {
     -- /dl/ or /il/ -> stream file content from tg file storage
 
     -- connect to tg file storage
-    params = {
-      path = escape_uri('/file/bot%s/' .. file_path),
-    }
-    local expected_etag = ngx_req_get_headers()['if-none-match']
-    if type(expected_etag) == 'string' then
-      expected_etag = decode_etag(expected_etag)
-      if expected_etag then
-        params.headers = {
-          ['if-none-match'] = expected_etag,
-        }
-      end
+    local etag
+    local encoded_etag = ngx_var.http_if_none_match
+    if type(encoded_etag) == 'string' then
+      etag = decode_etag(encoded_etag)
     end
-    res, err = request_tg_server(conn, params)
-    if not res then
+    resp, err = client:request_file(file_path, etag)
+    if err then
+      client:close()
       log(ngx_ERR, 'tg file storage request error: %s', err)
-      conn:set_keepalive()
       return error(ngx_HTTP_BAD_GATEWAY)
     end
-    local res_status = res.status
+    local res_status = resp.status
     if res_status == ngx_HTTP_NOT_MODIFIED then
-      conn:set_keepalive()
+      client:close()
       return ngx_exit(ngx_HTTP_NOT_MODIFIED)
-    elseif res_status ~= ngx_HTTP_OK then
-      log(ngx_ERR, 'tg file storage response status %s != 200', res.status)
-      conn:set_keepalive()
-      return error(ngx_HTTP_NOT_FOUND)
     end
 
     if not file_name or #file_name < 1 then
@@ -195,14 +171,14 @@ return {
     ngx_header['content-disposition'] = ("%s; filename*=utf-8''%s"):format(
       content_disposition, escape_uri(file_name, true))
     ngx_header['content-length'] = file_size
-    local etag = res.headers['etag']
+    etag = resp.headers['etag']
     if type(etag) == 'string' then
       ngx_header['etag'] = encode_etag(etag)
     end
 
     local chunk
     while true do
-      chunk, err = res.body_reader(CHUNK_SIZE)
+      chunk, err = resp.body_reader(CHUNK_SIZE)
       if err then
         log(ngx_ERR, 'tg file storage read error: %s', err)
         break
@@ -211,7 +187,7 @@ return {
       ngx_print(chunk)
     end
 
-    conn:set_keepalive()
+    client:close()
 
   end
 

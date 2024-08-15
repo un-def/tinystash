@@ -49,6 +49,10 @@ uploader.new = function(_self, _upload_type, chat_id, _headers)
 end
 
 uploader.run = function(self)
+  -- sets:
+  --    self.client: tg.client (via upload)
+  --    self.media_type: string (via upload)
+  --    self.bytes_uploaded: int (via upload)
   ngx_req.read_body()
   local url, err
   if self.is_form then

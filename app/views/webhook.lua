@@ -40,8 +40,7 @@ local link_url_prefix = config._processed.link_url_prefix
 local enable_upload = config._processed.enable_upload
 local enable_upload_api = config._processed.enable_upload_api
 
-local prepare_connection = tg.prepare_connection
-local request_tg_server = tg.request_tg_server
+local tg_client = tg.client
 
 local render_link_factory = helpers.render_link_factory
 local render_to_string = helpers.render_to_string
@@ -69,30 +68,19 @@ end
 local forward_message = function(message)
   -- yield to return from ngx.thread.spawn ASAP
   yield()
-  local conn, err = prepare_connection()
-  if not conn then
-    log(ngx_ERR, 'tg api connection error: %s', err)
-    return
-  end
-  local params = {
-    path = '/bot%s/forwardMessage',
-    method = 'POST',
-    headers = {
-      ['content-type'] = 'application/json',
-    },
-    body = json_encode{
-      chat_id = tg_forward_chat_id,
-      from_chat_id = message.chat.id,
-      message_id = message.message_id,
-    },
-  }
-  local res, err = request_tg_server(conn, params, true)   -- luacheck: ignore 411
-  if not res then
+  local client = tg_client()
+  local resp, err = client:forward_message({
+    chat_id = tg_forward_chat_id,
+    from_chat_id = message.chat.id,
+    message_id = message.message_id,
+  })
+  client:close()
+  if err then
     log(ngx_ERR, 'tg api request error: %s', err)
     return
   end
-  if not res.ok then
-    log(ngx_INFO, 'tg api response is not "ok": %s', res.description)
+  if not resp.ok then
+    log(ngx_INFO, 'tg api response is not "ok": %s', resp.description)
   end
 end
 

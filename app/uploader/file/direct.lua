@@ -56,7 +56,7 @@ end
 uploader.run = function(self)
   -- sets:
   --    self.bytes_uploaded: int (via upload)
-  --    self.conn: http connection (via upload)
+  --    self.client: tg.client (via upload)
   local sock, err = req_socket()
   if not sock then
     log(ngx_ERR, 'downstream socket error: %s', err)

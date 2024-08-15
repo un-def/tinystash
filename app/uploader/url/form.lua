@@ -26,9 +26,9 @@ end
 
 uploader.run = function(self)
   -- sets:
-  --    self.media_type: string
+  --    self.client: tg.client (via upload)
+  --    self.media_type: string (via upload)
   --    self.bytes_uploaded: int (via upload)
-  --    self.conn: http connection (via upload)
   ngx_req.read_body()
   local args, err = ngx_req.get_post_args()
   if err then

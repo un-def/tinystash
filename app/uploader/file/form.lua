@@ -46,7 +46,7 @@ uploader.run = function(self)
   -- sets:
   --    self.media_type: string
   --    self.bytes_uploaded: int (via upload)
-  --    self.conn: http connection (via upload)
+  --    self.client: tg.client (via upload)
   local csrftoken, file_object
   local ok, res, err, err_code
   while true do

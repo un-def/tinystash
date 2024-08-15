@@ -52,8 +52,10 @@ uploader.run = function()
 end
 
 uploader.close = function(self)
-  if self.conn then
-    self.conn:set_keepalive()
+  local client = self.client
+  if client then
+    client:close()
+    self.client = nil
   end
 end
 

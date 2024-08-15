@@ -291,4 +291,12 @@ _M.format_file_size = function(size)
   return ('%.1f %s (%s)'):format(unit_size, unit, byte_size)
 end
 
+_M.set = function(item_t)
+  local set_t = {}
+  for _, item in ipairs(item_t) do
+    set_t[item] = true
+  end
+  return set_t
+end
+
 return _M
