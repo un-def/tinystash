@@ -18,6 +18,8 @@ local MEDIA_TYPES = {
   [8] = {'image/gif', 'gif'},
   [16] = {'image/webp', 'webp'},
   [19] = {'image/svg+xml', 'svg'},
+  [24] = {'image/jxl', 'jxl'},
+  [25] = {'image/jxr', 'jxr'},
   -- application types
   [9] = {'application/pdf', 'pdf'},
   [10] = {'application/xml', 'xml'},
@@ -35,7 +37,7 @@ local MEDIA_TYPES = {
   [22] = {'video/matroska', 'mkv'},
   [23] = {'video/quicktime', 'mov'},
 
-  -- [24] = {},   -- next index
+  -- [26] = {},   -- next index
 }
 
 
