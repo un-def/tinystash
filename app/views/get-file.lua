@@ -93,12 +93,13 @@ return {
     local file_size = resp.result.file_size
     local media_type = tiny_id_params.media_type or DEFAULT_MEDIA_TYPE
     local extension
+    -- getFile right after upload returns File without file_path field
+    if file_path and file_path:match('^voice/.+%.oga$') then
     -- fix voice message file .oga extension
-    if file_path:match('^voice/.+%.oga$') then
       extension = '.' .. TG_TYPES_EXTENSIONS_MAP[TG_TYPES.VOICE]
     else
       extension = guess_extension{
-        file_name = unescape_ext(file_path),
+        file_name = file_path and unescape_ext(file_path),
         media_type = media_type,
       }
     end
@@ -119,6 +120,9 @@ return {
 
     -- /dl/ or /il/ -> stream file content from tg file storage
 
+    if not file_path then
+      return error(ngx_HTTP_BAD_GATEWAY, 'upstream did not return a file path')
+    end
     -- connect to tg file storage
     local etag
     local encoded_etag = ngx_var.http_if_none_match
