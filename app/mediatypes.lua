@@ -24,19 +24,29 @@ local MEDIA_TYPES = {
   [10] = {'application/xml', 'xml'},
   [14] = {'application/javascript', 'js'},
   [15] = {'application/json', 'json'},
-  [20] = {'application/zip', 'zip'},
+  [20] = {'application/zip', 'application/x-zip-compressed', 'zip'},
   [21] = {'application/gzip', 'gz'},
+  [26] = {'application/vnd.rar', 'application/x-rar', 'rar'},
+  [27] = {'application/x-7z-compressed', '7z'},
+  [28] = {'application/x-bzip2', 'bz2'},
+  [29] = {'application/x-tar', 'tar'},
+  [30] = {'application/yaml', 'yaml'},
+  [31] = {'application/toml', 'toml'},
   -- text types
   [11] = {'text/plain', 'txt'},
   [12] = {'text/html', 'html'},
   [13] = {'text/xml', 'xml'},
+  [32] = {'text/markdown', 'md'},
+  [33] = {'text/x-shellscript', 'application/x-shellscript', 'sh'},
+  [34] = {'text/x-python', 'py'},
+  [35] = {'text/x-lua', 'lua'},
   -- video types
   [17] = {'video/mp4', 'mp4'},
   [18] = {'video/webm', 'webm'},
   [22] = {'video/matroska', 'mkv'},
   [23] = {'video/quicktime', 'mov'},
 
-  -- [26] = {},   -- next index
+  -- [36] = {},   -- next index
 }
 
 
