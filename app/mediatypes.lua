@@ -3,7 +3,6 @@ local DEFAULT_TYPE = 'application/octet-stream'
 
 -- KEEP THIS ARRAY DENSE!
 -- format: [media type id] = {'correct media type', ...aliases..., extension}
--- specify media types without 'x-', e.g., 'text/lua' instead of 'text/x-lua'
 local MEDIA_TYPES = {
   -- audio types
   [1] = {'audio/mpeg', 'audio/mp3', 'mp3'},

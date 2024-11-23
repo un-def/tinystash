@@ -154,67 +154,98 @@ _M.get_substring = function(str, start, length, blank_to_nil)
   return substr, next
 end
 
-_M.parse_media_type = function(media_type)
+local parse_media_type = function(media_type)
   local type_, subtype, suffix = media_type:match(
     '^([%w_-]+)/([.%w_-]+)%+?([%w_-]-)$')
   if not type_ then
     return nil, 'Media type parse error'
   end
-  if suffix == '' then
-    suffix = nil
-  end
-  local x = false
-  if subtype:sub(1, 2) == 'x-' then
-    subtype = subtype:sub(3)
-    x = true
-  end
-  return {type_, subtype, suffix, x}
+  local has_x = subtype:sub(1, 2) == 'x-'
+  -- [1] -- string, type, non-empty
+  -- [2] -- string, subtype including tree and x- prefix (if any)
+  -- [3] -- string, suffix excluding plus sign, may be empty
+  -- [4] -- boolean, true if subtype has x- prefix
+  return {type_, subtype, suffix, has_x}
 end
 
-local normalize_media_type = function(media_type)
-  local media_type_table
-  if type(media_type) == 'table' then
-    media_type_table = media_type
-  else
-    media_type_table = _M.parse_media_type(media_type)
-    if not media_type_table then return media_type end
+_M.parse_media_type = parse_media_type
+
+local _render_media_type = function(type_, subtype, suffix)
+  if suffix and suffix ~= '' then
+    return ('%s/%s+%s'):format(type_, subtype, suffix)
   end
-  local type_, subtype, suffix = unpack(media_type_table)
-  -- normalize {type}/{subtype}+xml, e.g., text/html+xml
-  if suffix == 'xml' then
-    if subtype == 'html' then
-      return type_ .. '/html'
-    else
-      return type_ .. '/xml'
+  return ('%s/%s'):format(type_, subtype)
+end
+
+local render_media_type = function(media_type_table, with_x)
+  -- with_x: boolean -- force adding or removing x- prefix
+  -- if with_x is not set (nil), keep x- prefix as is
+  local type_, subtype, suffix, has_x = unpack(media_type_table)
+  if with_x ~= nil then
+    if with_x and not has_x then
+      subtype = 'x-' .. subtype
+    end
+    if not with_x and has_x then
+      subtype = subtype:sub(3)
     end
   end
-  -- remove 'x-' subtype prefix
-  return ('%s/%s%s'):format(type_, subtype, suffix and '+' .. suffix or '')
+  return _render_media_type(type_, subtype, suffix)
 end
 
-local get_media_type_id
-get_media_type_id = function(media_type, raw)
+_M.render_media_type = render_media_type
+
+local _get_media_type_id = function(media_type)
   if media_type == DEFAULT_TYPE then
     return DEFAULT_TYPE_ID, DEFAULT_TYPE
   end
   local media_type_id = TYPE_ID_MAP[media_type]
   if media_type_id then
     return media_type_id, ID_TYPE_MAP[media_type_id]
-  elseif raw then
-    return nil, media_type
   end
-  local media_type_table = _M.parse_media_type(media_type)
-  if media_type_table then
-    media_type = normalize_media_type(media_type_table)
-    media_type_id, media_type = get_media_type_id(media_type, true)
+  return nil, media_type
+end
+
+local get_media_type_id = function(media_type)
+  -- NB: media_type is modified across this function
+  local media_type_id
+
+  -- first, try media_type as is
+  media_type_id, media_type = _get_media_type_id(media_type)
+  if media_type_id then
+    return media_type_id, media_type
+  end
+
+  local media_type_table = parse_media_type(media_type)
+  if not media_type_table then
+    return DEFAULT_TYPE_ID, DEFAULT_TYPE
+  end
+  local type_, subtype, suffix, has_x = unpack(media_type_table)
+
+  -- try with x- prefix added/removed
+  media_type = render_media_type(media_type_table, not has_x)
+  media_type_id, media_type = _get_media_type_id(media_type)
+  if media_type_id then
+    return media_type_id, media_type
+  end
+
+  -- try with {type}/{subtype}+xml (e.g., text/html+xml) normalized
+  if suffix == 'xml' then
+    if subtype == 'html' then
+      media_type = _render_media_type(type_, 'html')
+    else
+      media_type = _render_media_type(type_, 'xml')
+    end
+    media_type_id, media_type = _get_media_type_id(media_type)
     if media_type_id then
       return media_type_id, media_type
     end
-    -- fallback unknown 'text/{subtype}' to 'text/plain'
-    if media_type_table[1] == 'text' then
-      return get_media_type_id('text/plain', true)
-    end
   end
+
+  -- fallback unknown 'text/{subtype}' to 'text/plain'
+  if type_ == 'text' then
+    return _get_media_type_id('text/plain')
+  end
+
   return DEFAULT_TYPE_ID, DEFAULT_TYPE
 end
 
