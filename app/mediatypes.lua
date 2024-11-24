@@ -3,6 +3,7 @@ local DEFAULT_TYPE = 'application/octet-stream'
 
 -- KEEP THIS ARRAY DENSE!
 -- format: [media type id] = {'correct media type', ...aliases..., extension}
+-- TODO: add extension aliases, e.g., oga -> ogg
 local MEDIA_TYPES = {
   -- audio types
   [1] = {'audio/mpeg', 'audio/mp3', 'mp3'},
@@ -10,6 +11,7 @@ local MEDIA_TYPES = {
   [3] = {'audio/flac', 'flac'},
   [4] = {'audio/ogg', 'audio/vorbis+ogg', 'audio/opus+ogg',
          'audio/flac+ogg', 'audio/speex+ogg', 'audio/speex', 'ogg'},
+  [36] = {'audio/matroska', 'mka'},
   -- image types
   [5] = {'image/jpeg', 'jpg'},
   [6] = {'image/png', 'png'},
@@ -45,8 +47,11 @@ local MEDIA_TYPES = {
   [18] = {'video/webm', 'webm'},
   [22] = {'video/matroska', 'mkv'},
   [23] = {'video/quicktime', 'mov'},
+  [37] = {'video/ogg', 'ogv'},
+  [38] = {'video/vnd.avi', 'video/avi', 'video/x-msvideo', 'avi'},
+  [39] = {'video/x-flv', 'flv'},
 
-  -- [36] = {},   -- next index
+  -- [40] = {},   -- next index
 }
 
 
