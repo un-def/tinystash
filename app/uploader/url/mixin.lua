@@ -1,10 +1,6 @@
 local tg = require('app.tg')
 local utils = require('app.utils')
 
-local tostring = tostring
-local string_find = string.find
-local string_lower = string.lower
-
 local ngx_HTTP_BAD_GATEWAY = ngx.HTTP_BAD_GATEWAY
 local ngx_ERR = ngx.ERR
 local ngx_INFO = ngx.INFO

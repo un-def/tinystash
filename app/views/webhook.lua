@@ -26,6 +26,7 @@ local log = utils.log
 local error = utils.error
 local guess_media_type = utils.guess_media_type
 local guess_extension = utils.guess_extension
+local utf8_sub = utils.utf8_sub
 
 local TG_CHAT_PRIVATE = constants.TG_CHAT_PRIVATE
 local TG_MAX_FILE_SIZE = constants.TG_MAX_FILE_SIZE
@@ -47,6 +48,24 @@ local get_url_upload_error_type = tg.get_url_upload_error_type
 local render_link_factory = helpers.render_link_factory
 local render_to_string = helpers.render_to_string
 local markdown_escape = helpers.markdown_escape
+
+
+local extract_url = function(message)
+  local entities = message.entities
+  if not entities then
+    return nil
+  end
+  for _, entity in ipairs(entities) do
+    local entity_type = entity.type
+    if entity_type == 'url' then
+      local offset = entity.offset
+      return utf8_sub(message.text, offset + 1, offset + entity.length)
+    elseif entity_type == 'text_link' then
+      return entity.url
+    end
+  end
+  return nil
+end
 
 
 local extract_file_and_reply_to_user = function(reply_callback, file_message, user_message)
@@ -224,9 +243,9 @@ return {
       ngx_thread_spawn(forward_message, message)
     end
     if message.text then
-      -- TODO: implement proper URL scanner
-      if message.text:match('^https?://') then
-        ngx_thread_spawn(upload_url_and_send_message_to_user, message, message.text)
+      local url = extract_url(message)
+      if url then
+        ngx_thread_spawn(upload_url_and_send_message_to_user, message, url)
         return
       end
       local command, bot_username = message.text:match('^/([%w_]+)@?([%w_]*)')

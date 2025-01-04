@@ -7,6 +7,8 @@ local mediatypes = require('app.mediatypes')
 
 
 local string_match = string.match
+local string_byte = string.byte
+local string_sub = string.sub
 local string_format = string.format
 local debug_getinfo = debug.getinfo
 local ngx_exec = ngx.exec
@@ -328,6 +330,51 @@ _M.set = function(item_t)
     set_t[item] = true
   end
   return set_t
+end
+
+local _utf8_next = function(str, at)
+  -- returns next code point byte index, current code point width
+  if at > #str then
+    return nil
+  end
+  local width
+  local byte = string_byte(str, at)
+  if byte < 192 then
+    width = 1
+  elseif byte < 224 then
+    width = 2
+  elseif byte < 240 then
+    width = 3
+  else
+    width = 4
+  end
+  return at + width, width
+end
+
+local _utf8_scan = function(str)
+  -- iterator, string, position
+  return _utf8_next, str, 1
+end
+
+_M.utf8_sub = function(str, from, to)
+  if not from or from < 1 then error('from must be positive') end
+  if to and to < 1 then error('to must be positive') end
+  if to < from then error('to must be >= from') end
+  local cur = 1   -- current codepoint index
+  local from_byte
+  local to_byte
+  for next_byte, width in _utf8_scan(str) do
+    if cur == from then
+      from_byte = next_byte - width
+      if not to then
+        return string_sub(str, from_byte)
+      end
+    end
+    if cur == to then
+      return string_sub(str, from_byte, next_byte - 1)
+    end
+    cur = cur + 1
+  end
 end
 
 return _M
