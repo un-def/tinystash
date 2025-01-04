@@ -1,0 +1,2 @@
+{( includes/user_mention.txt )}
+Telegram rejected to process URL.

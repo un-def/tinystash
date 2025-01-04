@@ -5,6 +5,9 @@ local constants = require('app.constants')
 local config = require('app.config')
 local utils = require('app.utils')
 
+local tostring = tostring
+local string_find = string.find
+local string_lower = string.lower
 local string_format = string.format
 local json_encode = json.encode
 local json_decode = json.decode
@@ -32,6 +35,14 @@ local _EXPECTED_200_201_400 = set{200, 201, 400}
 local client_mt = {}
 
 client_mt.__index = client_mt
+
+client_mt.send_message = function(self, json_body)
+  local options = {
+    method = 'POST',
+    json = json_body,
+  }
+  return self:_call_api('sendMessage', options, _EXPECTED_200_201)
+end
 
 client_mt.send_document = function(self, json_body_or_options)
   local options
@@ -135,7 +146,6 @@ client_mt._call_api = function(self, api_method, options, expected)
     decode = true
   end
   if not decode then
-    -- don't forget to call client:close()
     return resp
   end
   local resp_body
@@ -229,6 +239,25 @@ _M.get_file_from_message = function(message)
     end
   end
   return nil, 'no file in the message'
+end
+
+local URL_UPLOAD_ERROR_FAILED = 'FAILED'
+local URL_UPLOAD_ERROR_FAILED_PATTERN = string_lower('failed to get HTTP URL content')
+local URL_UPLOAD_ERROR_REJECTED = 'REJECTED'
+local URL_UPLOAD_ERROR_REJECTED_PATTERN = string_lower('wrong file identifier/HTTP URL specified')
+
+_M.URL_UPLOAD_ERROR_FAILED = URL_UPLOAD_ERROR_FAILED
+_M.URL_UPLOAD_ERROR_REJECTED = URL_UPLOAD_ERROR_REJECTED
+
+_M.get_url_upload_error_type = function(err)
+  local err_lower = string_lower(tostring(err))
+  if string_find(err_lower, URL_UPLOAD_ERROR_FAILED_PATTERN, 1, true) then
+    return URL_UPLOAD_ERROR_FAILED
+  end
+  if string_find(err_lower, URL_UPLOAD_ERROR_REJECTED_PATTERN, 1, true) then
+    return URL_UPLOAD_ERROR_REJECTED
+  end
+  return nil
 end
 
 return _M
