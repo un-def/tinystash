@@ -1,10 +1,10 @@
 *Hi! I'm tiny[stash] bot.*
 
-Send me any content, and I'll generate public HTTP link for it.
+Send me any content or URL, and I'll generate a public HTTP link for it.
 
 {( includes/supported_types.txt )}
 {% if enable_upload then %}
-You can also upload any [file]({* link_url_prefix *}/upload/file) or [text]({* link_url_prefix *}/upload/text) directly with your browser{% if enable_upload_api then %} or [HTTP client]({* link_url_prefix *}/docs/api){% end %}.
+You can also upload any [file]({* link_url_prefix *}/upload/file), [text]({* link_url_prefix *}/upload/text), or [URL]({* link_url_prefix *}/upload/url) directly with your browser{% if enable_upload_api then %} or [HTTP client]({* link_url_prefix *}/docs/api){% end %}.
 
 {% end %}
 {( includes/max_file_size.txt )}

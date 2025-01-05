@@ -1,2 +1,2 @@
 {( includes/user_mention.txt )}
-There is no file in your message. See /help for supported content types.
+There is no file or URL in your message. See /help for supported content types.
