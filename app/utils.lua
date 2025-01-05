@@ -360,9 +360,8 @@ _M.utf8_sub = function(str, from, to)
   if not from or from < 1 then error('from must be positive') end
   if to and to < 1 then error('to must be positive') end
   if to < from then error('to must be >= from') end
-  local cur = 1   -- current codepoint index
+  local cur = 1   -- current code point index
   local from_byte
-  local to_byte
   for next_byte, width in _utf8_scan(str) do
     if cur == from then
       from_byte = next_byte - width
