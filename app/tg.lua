@@ -21,7 +21,7 @@ local set = utils.set
 
 
 local _TG_TOKEN = config.tg.token
-local _REQUEST_TIMEOUT_MS = config.tg.request_timeout * 1000
+local _DEFAULT_REQUEST_TIMEOUT = config.tg.request_timeout
 local _CONNECTION_OPTIONS = {
   scheme = 'https',
   host = TG_API_HOST,
@@ -36,15 +36,16 @@ local client_mt = {}
 
 client_mt.__index = client_mt
 
-client_mt.send_message = function(self, json_body)
+client_mt.send_message = function(self, json_body, timeout)
   local options = {
     method = 'POST',
     json = json_body,
+    timeout = timeout,
   }
   return self:_call_api('sendMessage', options, _EXPECTED_200_201)
 end
 
-client_mt.send_document = function(self, json_body_or_options)
+client_mt.send_document = function(self, json_body_or_options, timeout)
   local options
   if json_body_or_options.chat_id then
     options = {
@@ -57,27 +58,32 @@ client_mt.send_document = function(self, json_body_or_options)
       options.method = 'POST'
     end
   end
+  if timeout then
+    options.timeout = timeout
+  end
   -- 400 is expected status for url uploads
   return self:_call_api('sendDocument', options, _EXPECTED_200_201_400)
 end
 
-client_mt.forward_message = function(self, json_body)
+client_mt.forward_message = function(self, json_body, timeout)
   local options = {
     method = 'POST',
     json = json_body,
+    timeout = timeout,
   }
   return self:_call_api('forwardMessage', options, _EXPECTED_200_201)
 end
 
-client_mt.get_file = function(self, file_id)
+client_mt.get_file = function(self, file_id, timeout)
   local options = {
     method = 'GET',
     query = {file_id = file_id},
+    timeout = timeout,
   }
   return self:_call_api('getFile', options, _EXPECTED_200)
 end
 
-client_mt.request_file = function(self, file_path, etag)
+client_mt.request_file = function(self, file_path, etag, timeout)
   local expected
   local headers
   if etag then
@@ -93,7 +99,7 @@ client_mt.request_file = function(self, file_path, etag)
     path = string_format('/file/bot%s/%s', _TG_TOKEN, escape_uri(file_path)),
     headers = headers,
   }
-  return self:_request(params, expected)
+  return self:_request(params, expected, timeout)
 end
 
 client_mt.close = function(self)
@@ -106,6 +112,7 @@ end
 
 client_mt._call_api = function(self, api_method, options, expected)
   -- options: table:
+  --    timeout: number | nil -- seconds; if nil, the default value is used
   --    method: str HTTP method
   --    headers: table | nil
   --    query: table | nil
@@ -130,6 +137,7 @@ client_mt._call_api = function(self, api_method, options, expected)
       headers[header] = value
     end
   end
+  -- lua-resty-http :request() params
   local params = {
     method = options.method,
     path = string_format('/bot%s/%s', _TG_TOKEN, api_method),
@@ -137,7 +145,7 @@ client_mt._call_api = function(self, api_method, options, expected)
     query = options.query,
     body = body,
   }
-  local resp, err = self:_request(params, expected)
+  local resp, err = self:_request(params, expected, options.timeout)
   if err then
     return resp, wrap_error('resty.http request error', err)
   end
@@ -164,11 +172,15 @@ client_mt._call_api = function(self, api_method, options, expected)
   return resp_json
 end
 
-client_mt._request = function(self, params, expected)
+client_mt._request = function(self, params, expected, timeout)
   local conn, err = self:_connect()
   if not conn then
     return nil, err
   end
+  if not timeout then
+    timeout = _DEFAULT_REQUEST_TIMEOUT
+  end
+  conn:set_timeout(timeout * 1000)
   local resp
   resp, err = conn:request(params)
   if not resp then
@@ -193,6 +205,7 @@ client_mt._connect = function(self)
   if not ok then
     return nil, wrap_error('resty.http connect error', err)
   end
+  conn:set_timeout(_DEFAULT_REQUEST_TIMEOUT * 1000)
   return conn
 end
 
@@ -206,7 +219,6 @@ client_mt._get_connection = function(self)
   if not conn then
     return nil, wrap_error('resty.http new error', err)
   end
-  conn:set_timeout(_REQUEST_TIMEOUT_MS)
   self._conn = conn
   return conn
 end

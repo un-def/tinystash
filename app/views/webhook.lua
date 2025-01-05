@@ -49,6 +49,9 @@ local render_link_factory = helpers.render_link_factory
 local render_to_string = helpers.render_to_string
 local markdown_escape = helpers.markdown_escape
 
+-- some arbitrary multiplier, since url upload is a synchronous operation
+-- and the default timeout might be too short
+local URL_UPLOAD_TIMEOUT = config.tg.request_timeout * 5
 
 local extract_url = function(message)
   local entities = message.entities
@@ -170,7 +173,7 @@ local upload_url_and_send_message_to_user = function(user_message, url)
   local resp, err = client:send_document({
     chat_id = config.tg.upload_chat_id,
     document = url,
-  })
+  }, URL_UPLOAD_TIMEOUT)
   client:close()
   if err then
     log(ngx_ERR, 'tg api request error: %s', err)
