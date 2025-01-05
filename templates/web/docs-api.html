@@ -5,32 +5,102 @@
 
   <p><strong>tiny[stash]</strong> Direct Upload API allows you to upload files using various HTTP libraries for programming languages or HTTP clients such as <a href="https://curl.haxx.se/">curl</a>.</p>
 
-  <h2>Endpoints</h2>
 
-  <p>For <em>file uploads</em>: <code>{* link_url_prefix *}/upload/file</code></p>
-  <p>For <em>text uploads</em>: <code>{* link_url_prefix *}/upload/text</code></p>
-  <p>The only difference between them is that the latter always sets <code>content-type</code> to <code>text/plain</code>, whereas the former keeps the header value passed when the file is uploaded.</p>
-
-  <h2>Headers</h2>
-
-  <p><code>app-id</code>: <em>Required.</em> An arbitrary string.</p>
-  <p><code>content-length</code>: <em>Required.</em> The size of a body in bytes. {( includes/max_file_size.txt )}</p>
-  <p><code>content-type</code>: <em>Optional.</em> The default value for <em>file uploads</em> is <code>application/octet-stream</code>. Ignored for <em>text uploads</em>.</p>
-  <p><code>accept</code>: <em>Optional.</em> Set to <code>application/json</code> to get a JSON response (plain text will be used otherwise).</p>
-
-  <h2>Body</h2>
-
-  <p>Raw file content or text. Compressed or chunked transfer encodings are not supported.</p>
 
   <h2>Examples</h2>
 
-  <div class="codeblock">
-    # Upload video (.mp4) file
-    $ curl {* link_url_prefix *}/upload/file -H app-id:myapp -H content-type:video/mp4 --data-binary @/path/to/video.mp4
+  <div class="codeblock"><span class="comment"># Upload video (.mp4) file</span>
+curl {* link_url_prefix *}/upload/file -H App-ID:example -H Content-Type:video/mp4 --data-binary @/path/to/video.mp4</div>
 
-    # Upload text from pipe, get JSON response
-    $ echo 'This is my first text upload' | curl {* link_url_prefix *}/upload/text -H app-id:myapp -H accept:application/json --data-binary @-
+  <div class="codeblock"><span class="comment"># Upload text from pipe, get JSON response</span>
+echo 'This is my first text upload' | curl {* link_url_prefix *}/upload/text -H App-ID:example -H Accept:application/json --data-binary @-</div>
 
-  </div>
+  <div class="codeblock"><span class="comment"># Upload image via URL</span>
+curl {* link_url_prefix *}/upload/url -H App-ID:example -d url=https://www.gnu.org/graphics/gnu-head.png</div>
+
+  <h2>Endpoints</h2>
+
+  <ul>
+    <li><a href="#file-upload">File</a> uploads: <code>{* link_url_prefix *}/upload/file</code></li>
+    <li><a href="#text-upload">Text</a> uploads: <code>{* link_url_prefix *}/upload/text</code></li>
+    <li><a href="#url-upload">URL</a> uploads: <code>{* link_url_prefix *}/upload/url</code></li>
+  </ul>
+
+
+
+  <h2>Common Headers</h2>
+
+  <p>The following headers are used by all endpoints.</p>
+
+  <ul>
+    <li><code>App-ID</code> <em>Required.</em> An arbitrary string.</li>
+    <li><code>Accept</code> <em>Optional.</em> Set to <code>application/json</code> to get a JSON response (plain text will be used otherwise).</p>
+  </ul>
+
+
+
+  <h2 id="file-upload">File Upload</h2>
+
+  <h3>Endpoint</h3>
+
+  <p><code>{* link_url_prefix *}/upload/file</code></p>
+
+  <h3>Headers</h3>
+
+  <ul>
+    <li><code>Content-Length</code> <em>Required.</em> The size of a body in bytes. {( includes/max_file_size.txt )}</li>
+    <li><code>Content-Type</code> <em>Optional.</em> The default value is <code>application/octet-stream</code>.
+  </ul>
+
+  <h3>Body</h3>
+
+  <p>Raw file content. Compressed or chunked transfer encodings are not supported.</p>
+
+
+
+  <h2 id="text-upload">Text Upload</h2>
+
+  <h3>Endpoint</h3>
+
+  <p><code>{* link_url_prefix *}/upload/text</code></p>
+
+  <h3>Headers</h3>
+
+  <ul>
+    <li><code>Content-Length</code> <em>Required.</em> The size of a body in bytes. {( includes/max_file_size.txt )}</li>
+  </ul>
+
+  <h3>Body</h3>
+
+  <p>Text content. Compressed or chunked transfer encodings are not supported.</p>
+
+
+
+  <h2 id="url-upload">URL Upload</h2>
+
+  <h3>Endpoint</h3>
+
+  <p><code>{* link_url_prefix *}/upload/url</code></p>
+
+  <h3>Headers</h3>
+
+  <ul>
+    <li><code>Content-Type</code> <em>Required.</em> One of:
+      <ul>
+        <li><code>application/json</code></li>
+        <li><code>application/x-www-form-urlencoded</code></li>
+        <li><code>text/plain</code></li>
+      </ul>
+  </ul>
+
+  <h3>Body</h3>
+
+  <ul>
+    <li>JSON: <code>{"url": "&lt;URL&gt;"}</code></li>
+    <li>URL-encoded form: <code>url=&lt;URL&gt;</code></li>
+    <li>Plain text: <code>&lt;URL&gt;</code></li>
+  </ul>
+
+  <p>{( includes/max_file_size.txt )}</p>
 
 </div>

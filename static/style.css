@@ -51,32 +51,37 @@ a:hover, a:focus {
 
 h1 {
   font-size: 3rem;
-  margin: 1rem 0;
+  margin: 2.25rem 0 1rem;
 }
 
 h2 {
   font-size: 2.2rem;
-  margin: 1.12rem 0;
+  margin: 2rem 0 1rem;
 }
 
 h3 {
   font-size: 1.76rem;
-  margin: 1.25rem 0;
+  margin: 1.5rem 0 1rem;
 }
 
 h4 {
   font-size: 1.5rem;
-  margin: 1.5rem 0;
+  margin: 1.25rem 0 1rem;
 }
 
 h5 {
   font-size: 1.25rem;
-  margin: 2.25rem 0;
+  margin: 1.12rem 0 1rem;
 }
 
 h6 {
   font-size: 1.12rem;
-  margin: 2.5rem 0;
+  margin: 1rem 0 1rem;
+}
+
+ul {
+  list-style-position: inside;
+  margin-left: 1rem;
 }
 
 .monospace {
@@ -86,8 +91,7 @@ h6 {
 code {
   font-family: 'Source Code Pro', monospace;
   font-size: .8em;
-  padding: 1px 2px;
-  vertical-align: middle;
+  padding: 1px 4px;
   overflow-wrap: break-word;
   color: #555;
   background-color: #fcfcfc;
@@ -97,12 +101,17 @@ code {
 .codeblock {
   font-family: 'Source Code Pro', monospace;
   font-size: .9em;
-  padding: 0 1em;
+  padding: .5em .7em;
+  margin: .5em 0;
   overflow-wrap: break-word;
-  white-space: pre-line;
+  white-space: pre-wrap;
   color: #555;
   background-color: #fcfcfc;
   border: 1px solid #e0e0e0;
+}
+
+code .comment, .codeblock .comment {
+  color: #999;
 }
 
 .container {
@@ -230,6 +239,8 @@ footer .row .bull::before {
 
 .docs-page {
   margin: 1rem 0 3rem 0;
+  font-size: 1.2rem;
+  line-height: 1.8rem;
 }
 
 @media screen and (min-width: 900px) {
@@ -245,8 +256,6 @@ footer .row .bull::before {
 }
 
 .docs-page p {
-  font-size: 1.2rem;
-  line-height: 1.8rem;
   margin-bottom: .3rem;
 }
 
