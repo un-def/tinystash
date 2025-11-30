@@ -12,7 +12,6 @@ local url_path_prefix = config._processed.url_path_prefix
 local enable_upload = config._processed.enable_upload
 local enable_upload_api = config._processed.enable_upload_api
 local enable_donate = config.donate.enable
-local gtm_id = config.gtm_id
 
 
 local _M = {}
@@ -31,7 +30,6 @@ local render_to_string = function(template_path, context)
     enable_upload = enable_upload,
     enable_upload_api = enable_upload_api,
     enable_donate = enable_donate,
-    gtm_id = gtm_id,
   }
   if type(context) == 'table' then
     for k, v in pairs(context) do

@@ -90,7 +90,4 @@ return {
     },
   },
 
-  -- Google Tag Manager ID (Container ID), string or nil
-  gtm_id = nil,
-
 }
