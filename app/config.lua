@@ -31,4 +31,11 @@ _processed.enable_upload_api = _processed.enable_upload and config.enable_upload
 -- tg webhook secret, either set explicitly (arbitrary string) or implicitly (bot api token)
 _processed.tg_webhook_secret = config_tg.webhook_secret or config_tg.token
 
+local cache_status_header = config.nginx_conf.cache_status_header
+if type(cache_status_header) == 'string' then
+  _processed.cache_status_header = cache_status_header
+elseif cache_status_header == true then
+  _processed.cache_status_header = require('app.constants').CACHE_STATUS_HEADER
+end
+
 return config

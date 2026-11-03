@@ -40,6 +40,10 @@ _M.TG_API_HOST = 'api.telegram.org'
 
 _M.TG_MAX_FILE_SIZE = 20971520
 
+-- A custom header returned by the file proxy containing the original file_path value
+-- See: https://core.telegram.org/bots/api#file
+_M.TG_FILE_PATH_HEADER = 'TG-File-Path'
+
 _M.GET_FILE_MODES = {
   DOWNLOAD = 'dl',
   INLINE = 'il',
@@ -51,6 +55,8 @@ _M.CHUNK_SIZE = 8192
 _M.CSRFTOKEN_FIELD_NAME = 'csrftoken'
 
 _M.DOWNSTREAM_TIMEOUT = 10000
+
+_M.CACHE_STATUS_HEADER = 'TS-Cache-Status'
 
 
 return _M

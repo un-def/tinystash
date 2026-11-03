@@ -83,7 +83,7 @@ client_mt.get_file = function(self, file_id, timeout)
   return self:_call_api('getFile', options, _EXPECTED_200)
 end
 
-client_mt.request_file = function(self, file_path, etag, timeout)
+client_mt.request_file = function(self, file_path, etag, method, timeout)
   local expected
   local headers
   if etag then
@@ -95,7 +95,7 @@ client_mt.request_file = function(self, file_path, etag, timeout)
     expected = _EXPECTED_200
   end
   local params = {
-    method = 'GET',
+    method = method or 'GET',
     path = string_format('/file/bot%s/%s', _TG_TOKEN, escape_uri(file_path)),
     headers = headers,
   }

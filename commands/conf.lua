@@ -3,6 +3,7 @@ local process_file = require('resty.template').new({
 }).process_file
 
 local config = require('app.config').nginx_conf
+local CACHE_STATUS_HEADER = require('app.constants').CACHE_STATUS_HEADER
 
 
 assert(OPENRESTY_PREFIX and OPENRESTY_PREFIX ~= '', 'OPENRESTY_PREFIX is not set')
@@ -69,6 +70,24 @@ local lua_code_cache_validator = function(value)
   return nil, 'must be a boolean or "on" of "off", got ' .. value
 end
 
+local cache_status_header_validator = function(value)
+  local err
+  value, err = type_validator(BOOLEAN, STRING)(value)
+  if err then
+    return nil, err
+  end
+  if type(value) == STRING then
+    if #value == 0 then
+      return nil, 'empty string is not allowed'
+    end
+    return value
+  end
+  if value then
+    return CACHE_STATUS_HEADER
+  end
+  return nil
+end
+
 local context = {
   worker_processes = option{'worker_processes', validator = worker_processes_validator, default = 'auto'},
   worker_connections = option{'worker_connections', validator = type_validator(NUMBER), default = NIL},
@@ -81,5 +100,14 @@ local context = {
   access_log = option{'access_log', validator = type_validator(STRING), default = 'off'},
   lua_code_cache = option{'lua_code_cache', validator = lua_code_cache_validator, default = true},
   client_max_body_size = option{'client_max_body_size', validator = type_validator(STRING, NUMBER)},
+  cache_valid = option{'cache_valid', validator = type_validator(STRING), default = NIL},
 }
+
+if context.cache_valid then
+  context.cache_inactive = option{'cache_inactive', validator = type_validator(STRING), default = context.cache_valid}
+  context.cache_zone_size = option{'cache_zone_size', validator = type_validator(STRING)}
+  context.cache_max_size = option{'cache_max_size', validator = type_validator(STRING)}
+  context.cache_status_header = option{'cache_status_header', validator = cache_status_header_validator, default = NIL}
+end
+
 print(process_file('nginx.conf.tpl', context))

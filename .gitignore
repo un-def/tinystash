@@ -7,7 +7,9 @@
 *_temp/
 logs/
 resty_modules/
-nginx.pid
+file_cache/
+*.pid
+*.sock
 
 /nginx.conf
 /config.lua

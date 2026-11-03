@@ -56,6 +56,25 @@ return {
     lua_ssl_verify_depth = 5,
     -- (boolean, optional, default is false)
     resty_http_debug_logging = false,
+    -- (string, optional) caching time, e.g, '1h'
+    -- file cache is disabled by default (nil), set this field to enable it
+    -- see https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_cache_valid
+    cache_valid = nil,
+    -- (string, optional) how long an item can remain in the cache without being accessed, e.g., '1h'
+    -- defaults to the 'valid' setting value
+    -- see https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_cache_path
+    cache_inactive = nil,
+    -- (string, required if cache is enabled) shared memory zone size for cache keys, e.g., '1m'
+    -- see https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_cache_path
+    cache_zone_size = nil,
+    -- (string, required if cache is enabled) cache size, e.g., '10g'; when the size is exceeded,
+    -- the least recently used data is removed
+    -- see https://nginx.org/en/docs/http/ngx_http_proxy_module.html#proxy_cache_path
+    cache_max_size = nil,
+    -- (boolean | string, optional, default is false) set a cache status response header
+    -- to $upstream_cache_status; if boolean, the default (app-specific) header name is used
+    -- see https://nginx.org/en/docs/http/ngx_http_upstream_module.html#variables
+    cache_status_header = false,
   },
 
   -- url prefix for generated links: scheme://host[:port][/path], e.g.,

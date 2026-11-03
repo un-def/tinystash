@@ -78,7 +78,7 @@ _M.log = function(...)
 end
 
 _M.error = function(status, description)
-  return ngx_exec('/error', {status = status, description = description})
+  return ngx_exec('/_internal/error', {status = status, description = description})
 end
 
 _M.generate_random_hex_string = function(size)
@@ -111,6 +111,8 @@ _M.escape_uri = function(uri, escape_slashes)
   if escape_slashes then return ngx.escape_uri(uri) end
   return uri:gsub('[^/]+', ngx.escape_uri)
 end
+
+_M.unescape_uri = ngx.unescape_uri
 
 local split_ext = function(path, exclude_dot)
   local root, ext = path:match('(.*[^/]+)%.([^./]+)$')
