@@ -44,7 +44,7 @@ case "${command}" in
       exit 2
     fi
     echo "${nginx_conf_content}" > "${nginx_conf}"
-    exec "${OPENRESTY_PREFIX}/nginx/sbin/nginx" -c "${nginx_conf}" -p "${TINYSTASH_DIR}"
+    exec "${OPENRESTY_PREFIX}/nginx/sbin/nginx" -e stderr -p "${TINYSTASH_DIR}" -c "${nginx_conf}"
     ;;
   *)
     usage
