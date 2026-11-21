@@ -98,7 +98,7 @@ local context = {
   resty_http_debug_logging = option{'resty_http_debug_logging', validator = type_validator(BOOLEAN), default = false},
   listen = option{'listen', validator = type_validator(NUMBER)},
   access_log = option{'access_log', validator = type_validator(STRING), default = 'off'},
-  lua_code_cache = option{'lua_code_cache', validator = lua_code_cache_validator, default = true},
+  lua_code_cache = option{'lua_code_cache', validator = lua_code_cache_validator, default = 'on'},
   client_max_body_size = option{'client_max_body_size', validator = type_validator(STRING, NUMBER)},
   cache_valid = option{'cache_valid', validator = type_validator(STRING), default = NIL},
 }
