@@ -31,6 +31,9 @@ http {
     {% if resty_http_debug_logging then %}
     require('resty.http').debug(true)
     {% end %}
+    require('app.views')
+    require('app.file-proxy')
+    require('app.phases.header_filter')
     collectgarbage('collect')
   }
 
